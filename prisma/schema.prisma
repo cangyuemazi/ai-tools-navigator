@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// AI 工具表
+model Tool {
+  id            String    @id @default(cuid())
+  name          String
+  description   String
+  url           String
+  logo          String?
+  categoryId    String
+  subCategoryId String?
+  tags          String    // 在 SQLite 中，数组可以用逗号分隔的字符串或 JSON 字符串存储
+  views         Int       @default(0)
+  isSponsored   Boolean   @default(false)
+  sponsorExpiry DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// 分类表
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String?  
+  icon      String?  
+  order     Int      @default(0)
+}
+
+// 待审核的工具提交表（客户自助提交）
+model PendingTool {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  url         String
+  contactInfo String?  // 客户联系方式（微信/邮箱）
+  status      String   @default("pending") // pending, approved, rejected
+  createdAt   DateTime @default(now())
+}

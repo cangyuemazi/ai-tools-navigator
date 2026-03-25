@@ -1,11 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu } from "lucide-react";
 import Sidebar from "./Sidebar";
 import FloatingWidgets from "./FloatingWidgets";
-import categoriesData from "@/data/categories.json";
 import type { Category } from "@/types";
-
-const categories = categoriesData as Category[];
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,6 +19,17 @@ export default function Layout({
 }: LayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  
+  // 👇 新增：用来存储从数据库获取的分类数据
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // 👇 新增：组件加载时，去后端 API 抓取分类数据
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then((data) => setCategories(data))
+      .catch((err) => console.error("加载分类数据失败:", err));
+  }, []);
 
   const handleSelectCategory = (categoryId: string | null, subCategoryId?: string | null) => {
     if (onSelectCategory) {
@@ -31,7 +39,6 @@ export default function Layout({
   };
 
   return (
-    // 采用苹果经典的 #f5f5f7 主背景，全局文字基准为 #1d1d1f
     <div className="flex h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans selection:bg-[#0071e3]/20">
       <Sidebar
         categories={categories}
@@ -45,7 +52,6 @@ export default function Layout({
 
       <main id="main-scroll-container" className="flex-1 overflow-y-auto scroll-smooth relative">
         {showMobileHeader && (
-          // 移动端顶部采用 20px 毛玻璃效果
           <div className="lg:hidden sticky top-0 z-30 bg-[#f5f5f7]/70 backdrop-blur-[20px] border-b border-[#e8e8ed] px-4 py-3 flex items-center gap-3 transition-all">
             <button
               onClick={() => setMobileOpen(true)}

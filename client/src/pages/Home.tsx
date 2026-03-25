@@ -1,23 +1,40 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import Layout from "@/components/Layout";
 import ToolGrid from "@/components/ToolGrid";
-import categoriesData from "@/data/categories.json";
-import toolsData from "@/data/tools.json";
 import type { Category, Tool } from "@/types";
-
-const categories = categoriesData as Category[];
-const tools = toolsData as Tool[];
 
 export default function Home() {
   const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
 
+  // 👇 新增：存储后端传来的动态数据与加载状态
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("sub") || params.get("category") || null;
   });
+
+  // 👇 新增：打通任督二脉！同时向后端请求“分类”和“工具”数据
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/categories").then(res => res.json()),
+      fetch("/api/tools").then(res => res.json())
+    ])
+    .then(([catsData, toolsData]) => {
+      setCategories(catsData);
+      setTools(toolsData);
+      setLoading(false); // 数据拿到了，关闭加载动画
+    })
+    .catch(err => {
+      console.error("连接数据库失败:", err);
+      setLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -57,13 +74,12 @@ export default function Home() {
       );
     }
     return result;
-  }, [selectedCategoryId, searchQuery]);
+  }, [selectedCategoryId, searchQuery, tools, categories]);
 
   return (
     <Layout selectedCategoryId={selectedCategoryId} onSelectCategory={handleSelectCategory}>
       <div className="p-6 md:p-10 lg:p-12 max-w-[1600px] flex flex-col gap-8 mx-auto">
         
-        {/* 苹果风格的高级搜索框 */}
         <div className="relative max-w-2xl w-full group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <Search className="h-[20px] w-[20px] text-[#86868b] transition-colors group-focus-within:text-[#0071e3]" />
@@ -77,7 +93,15 @@ export default function Home() {
           />
         </div>
 
-        <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={selectedCategoryId} />
+        {/* 👇 新增：优雅的加载状态展示 */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-32 text-[#86868b]">
+            <Loader2 className="w-10 h-10 animate-spin text-[#0071e3] mb-4" />
+            <p className="text-[15px] font-medium">正在读取数据库...</p>
+          </div>
+        ) : (
+          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={selectedCategoryId} />
+        )}
       </div>
     </Layout>
   );
