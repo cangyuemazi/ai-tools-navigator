@@ -1,0 +1,397 @@
+[
+  {
+    "id": "hot",
+    "name": "热门工具",
+    "icon": "Flame",
+    "children": []
+  },
+  {
+    "id": "writing",
+    "name": "AI写作工具",
+    "icon": "PenTool",
+    "children": [
+      {
+        "id": "writing-paper",
+        "name": "论文写作",
+        "parentId": "writing"
+      },
+      {
+        "id": "writing-novel",
+        "name": "小说创作",
+        "parentId": "writing"
+      },
+      {
+        "id": "writing-copy",
+        "name": "文案生成",
+        "parentId": "writing"
+      },
+      {
+        "id": "writing-polish",
+        "name": "内容润色",
+        "parentId": "writing"
+      }
+    ]
+  },
+  {
+    "id": "ppt",
+    "name": "AI PPT生成",
+    "icon": "Presentation",
+    "children": [
+      {
+        "id": "ppt-oneclick",
+        "name": "一键生成",
+        "parentId": "ppt"
+      },
+      {
+        "id": "ppt-template",
+        "name": "模板库",
+        "parentId": "ppt"
+      },
+      {
+        "id": "ppt-layout",
+        "name": "智能排版",
+        "parentId": "ppt"
+      }
+    ]
+  },
+  {
+    "id": "image",
+    "name": "AI图片工具",
+    "icon": "Image",
+    "children": [
+      {
+        "id": "image-t2i",
+        "name": "文生图",
+        "parentId": "image"
+      },
+      {
+        "id": "image-i2i",
+        "name": "图生图",
+        "parentId": "image"
+      },
+      {
+        "id": "image-edit",
+        "name": "图片编辑",
+        "parentId": "image"
+      },
+      {
+        "id": "image-bg",
+        "name": "背景移除",
+        "parentId": "image"
+      }
+    ]
+  },
+  {
+    "id": "video",
+    "name": "AI视频工具",
+    "icon": "Video",
+    "children": [
+      {
+        "id": "video-gen",
+        "name": "视频生成",
+        "parentId": "video"
+      },
+      {
+        "id": "video-avatar",
+        "name": "数字人",
+        "parentId": "video"
+      },
+      {
+        "id": "video-edit",
+        "name": "视频编辑",
+        "parentId": "video"
+      },
+      {
+        "id": "video-subtitle",
+        "name": "字幕生成",
+        "parentId": "video"
+      }
+    ]
+  },
+  {
+    "id": "office",
+    "name": "AI办公套件",
+    "icon": "Briefcase",
+    "children": [
+      {
+        "id": "office-doc",
+        "name": "智能文档",
+        "parentId": "office"
+      },
+      {
+        "id": "office-sheet",
+        "name": "表格处理",
+        "parentId": "office"
+      },
+      {
+        "id": "office-meeting",
+        "name": "会议纪要",
+        "parentId": "office"
+      }
+    ]
+  },
+  {
+    "id": "coding",
+    "name": "AI编程工具",
+    "icon": "Code",
+    "children": [
+      {
+        "id": "coding-gen",
+        "name": "代码生成",
+        "parentId": "coding"
+      },
+      {
+        "id": "coding-debug",
+        "name": "调试辅助",
+        "parentId": "coding"
+      },
+      {
+        "id": "coding-explain",
+        "name": "代码解释",
+        "parentId": "coding"
+      }
+    ]
+  },
+  {
+    "id": "design",
+    "name": "AI设计工具",
+    "icon": "Palette",
+    "children": [
+      {
+        "id": "design-ui",
+        "name": "UI设计",
+        "parentId": "design"
+      },
+      {
+        "id": "design-poster",
+        "name": "海报设计",
+        "parentId": "design"
+      },
+      {
+        "id": "design-logo",
+        "name": "Logo设计",
+        "parentId": "design"
+      }
+    ]
+  },
+  {
+    "id": "audio",
+    "name": "AI音频工具",
+    "icon": "Music",
+    "children": [
+      {
+        "id": "audio-tts",
+        "name": "语音合成",
+        "parentId": "audio"
+      },
+      {
+        "id": "audio-music",
+        "name": "音乐生成",
+        "parentId": "audio"
+      },
+      {
+        "id": "audio-edit",
+        "name": "音频编辑",
+        "parentId": "audio"
+      }
+    ]
+  },
+  {
+    "id": "fun",
+    "name": "AI趣味玩法",
+    "icon": "Sparkles",
+    "children": [
+      {
+        "id": "fun-chat",
+        "name": "AI聊天",
+        "parentId": "fun"
+      },
+      {
+        "id": "fun-roleplay",
+        "name": "角色扮演",
+        "parentId": "fun"
+      },
+      {
+        "id": "fun-gen",
+        "name": "趣味生成",
+        "parentId": "fun"
+      }
+    ]
+  },
+  {
+    "id": "job",
+    "name": "AI求职招聘",
+    "icon": "UserCheck",
+    "children": [
+      {
+        "id": "job-resume",
+        "name": "简历优化",
+        "parentId": "job"
+      },
+      {
+        "id": "job-interview",
+        "name": "模拟面试",
+        "parentId": "job"
+      },
+      {
+        "id": "job-match",
+        "name": "岗位匹配",
+        "parentId": "job"
+      }
+    ]
+  },
+  {
+    "id": "translate",
+    "name": "AI翻译工具",
+    "icon": "Languages",
+    "children": [
+      {
+        "id": "translate-text",
+        "name": "文本翻译",
+        "parentId": "translate"
+      },
+      {
+        "id": "translate-doc",
+        "name": "文档翻译",
+        "parentId": "translate"
+      },
+      {
+        "id": "translate-realtime",
+        "name": "实时翻译",
+        "parentId": "translate"
+      }
+    ]
+  },
+  {
+    "id": "learn",
+    "name": "AI学习资源",
+    "icon": "GraduationCap",
+    "children": [
+      {
+        "id": "learn-course",
+        "name": "课程推荐",
+        "parentId": "learn"
+      },
+      {
+        "id": "learn-assistant",
+        "name": "学习助手",
+        "parentId": "learn"
+      },
+      {
+        "id": "learn-qa",
+        "name": "知识问答",
+        "parentId": "learn"
+      }
+    ]
+  },
+  {
+    "id": "legal",
+    "name": "AI法律助手",
+    "icon": "Scale",
+    "children": [
+      {
+        "id": "legal-contract",
+        "name": "合同审查",
+        "parentId": "legal"
+      },
+      {
+        "id": "legal-consult",
+        "name": "法律咨询",
+        "parentId": "legal"
+      },
+      {
+        "id": "legal-case",
+        "name": "案例检索",
+        "parentId": "legal"
+      }
+    ]
+  },
+  {
+    "id": "ecommerce",
+    "name": "AI电商助手",
+    "icon": "ShoppingCart",
+    "children": [
+      {
+        "id": "ecommerce-image",
+        "name": "商品图生成",
+        "parentId": "ecommerce"
+      },
+      {
+        "id": "ecommerce-copy",
+        "name": "文案撰写",
+        "parentId": "ecommerce"
+      },
+      {
+        "id": "ecommerce-review",
+        "name": "评论分析",
+        "parentId": "ecommerce"
+      }
+    ]
+  },
+  {
+    "id": "finance",
+    "name": "AI金融工具",
+    "icon": "TrendingUp",
+    "children": [
+      {
+        "id": "finance-stock",
+        "name": "股票分析",
+        "parentId": "finance"
+      },
+      {
+        "id": "finance-report",
+        "name": "财报解读",
+        "parentId": "finance"
+      },
+      {
+        "id": "finance-invest",
+        "name": "投资建议",
+        "parentId": "finance"
+      }
+    ]
+  },
+  {
+    "id": "marketing",
+    "name": "AI营销助手",
+    "icon": "Megaphone",
+    "children": [
+      {
+        "id": "marketing-ad",
+        "name": "广告文案",
+        "parentId": "marketing"
+      },
+      {
+        "id": "marketing-social",
+        "name": "社交媒体",
+        "parentId": "marketing"
+      },
+      {
+        "id": "marketing-seo",
+        "name": "SEO优化",
+        "parentId": "marketing"
+      }
+    ]
+  },
+  {
+    "id": "llm",
+    "name": "AI大模型",
+    "icon": "Brain",
+    "children": [
+      {
+        "id": "llm-cn",
+        "name": "国内大模型",
+        "parentId": "llm"
+      },
+      {
+        "id": "llm-intl",
+        "name": "国外大模型",
+        "parentId": "llm"
+      },
+      {
+        "id": "llm-api",
+        "name": "API服务",
+        "parentId": "llm"
+      }
+    ]
+  }
+]

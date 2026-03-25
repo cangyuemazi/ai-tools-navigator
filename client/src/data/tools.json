@@ -1,0 +1,936 @@
+[
+  {
+    "id": "chatgpt",
+    "name": "ChatGPT",
+    "description": "OpenAI开发的大型语言模型，支持对话、写作、编程等多种任务",
+    "url": "https://chat.openai.com",
+    "logo": "https://cdn.oaistatic.com/assets/favicon-o20kmmos.svg",
+    "categoryId": "hot",
+    "subCategoryId": "",
+    "tags": [
+      "热门",
+      "免费"
+    ],
+    "views": 98200
+  },
+  {
+    "id": "midjourney",
+    "name": "Midjourney",
+    "description": "强大的AI图像生成工具，通过文字描述创建高质量艺术作品",
+    "url": "https://www.midjourney.com",
+    "logo": "https://www.midjourney.com/apple-touch-icon.png",
+    "categoryId": "hot",
+    "subCategoryId": "",
+    "tags": [
+      "热门",
+      "付费"
+    ],
+    "views": 76500
+  },
+  {
+    "id": "claude",
+    "name": "Claude",
+    "description": "Anthropic开发的AI助手，擅长长文本分析、写作和编程",
+    "url": "https://claude.ai",
+    "logo": "https://claude.ai/favicon.ico",
+    "categoryId": "hot",
+    "subCategoryId": "",
+    "tags": [
+      "热门",
+      "免费"
+    ],
+    "views": 65800
+  },
+  {
+    "id": "gemini",
+    "name": "Gemini",
+    "description": "Google推出的多模态AI模型，支持文本、图像、代码等理解与生成",
+    "url": "https://gemini.google.com",
+    "logo": "https://www.gstatic.com/lamda/images/gemini_favicon_f069958c85030456e93de685481c559f160ea06b.png",
+    "categoryId": "hot",
+    "subCategoryId": "",
+    "tags": [
+      "热门",
+      "免费"
+    ],
+    "views": 54300
+  },
+  {
+    "id": "wenxin",
+    "name": "文心一言",
+    "description": "百度推出的AI写作助手，支持论文大纲生成、内容扩写和润色",
+    "url": "https://yiyan.baidu.com",
+    "logo": "https://nlp-eb.cdn.bcebos.com/static/eb/asset/logo.8a6b508d.png",
+    "categoryId": "writing",
+    "subCategoryId": "writing-paper",
+    "tags": [
+      "免费",
+      "中文"
+    ],
+    "views": 42100
+  },
+  {
+    "id": "jasper",
+    "name": "Jasper AI",
+    "description": "专业的AI写作平台，支持学术论文、博客文章等多种文体写作",
+    "url": "https://www.jasper.ai",
+    "logo": "https://www.jasper.ai/favicon.ico",
+    "categoryId": "writing",
+    "subCategoryId": "writing-paper",
+    "tags": [
+      "付费",
+      "英文"
+    ],
+    "views": 31200
+  },
+  {
+    "id": "novelai",
+    "name": "NovelAI",
+    "description": "专为小说创作设计的AI工具，支持多种风格和题材的故事生成",
+    "url": "https://novelai.net",
+    "logo": "https://novelai.net/icons/novelai-round.png",
+    "categoryId": "writing",
+    "subCategoryId": "writing-novel",
+    "tags": [
+      "付费"
+    ],
+    "views": 28900
+  },
+  {
+    "id": "sudowrite",
+    "name": "Sudowrite",
+    "description": "AI小说写作助手，帮助作家突破创作瓶颈，生成情节和对话",
+    "url": "https://www.sudowrite.com",
+    "logo": "https://www.sudowrite.com/favicon.ico",
+    "categoryId": "writing",
+    "subCategoryId": "writing-novel",
+    "tags": [
+      "付费",
+      "英文"
+    ],
+    "views": 18700
+  },
+  {
+    "id": "copy-ai",
+    "name": "Copy.ai",
+    "description": "AI营销文案生成工具，快速创建广告语、社交媒体文案等",
+    "url": "https://www.copy.ai",
+    "logo": "https://www.copy.ai/favicon.ico",
+    "categoryId": "writing",
+    "subCategoryId": "writing-copy",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 35600
+  },
+  {
+    "id": "writesonic",
+    "name": "Writesonic",
+    "description": "AI内容创作平台，支持博客、广告文案、产品描述等生成",
+    "url": "https://writesonic.com",
+    "logo": "https://writesonic.com/favicon.ico",
+    "categoryId": "writing",
+    "subCategoryId": "writing-copy",
+    "tags": [
+      "免费"
+    ],
+    "views": 24300
+  },
+  {
+    "id": "grammarly",
+    "name": "Grammarly",
+    "description": "AI语法检查和写作优化工具，提升英文写作质量",
+    "url": "https://www.grammarly.com",
+    "logo": "https://static.grammarly.com/assets/files/efe57d016d9efff36da7884c193b646b/favicon-32x32.png",
+    "categoryId": "writing",
+    "subCategoryId": "writing-polish",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 52100
+  },
+  {
+    "id": "quillbot",
+    "name": "QuillBot",
+    "description": "AI改写和润色工具，支持多种改写模式和语法检查",
+    "url": "https://quillbot.com",
+    "logo": "https://quillbot.com/favicon.ico",
+    "categoryId": "writing",
+    "subCategoryId": "writing-polish",
+    "tags": [
+      "免费"
+    ],
+    "views": 29800
+  },
+  {
+    "id": "gamma",
+    "name": "Gamma",
+    "description": "AI驱动的演示文稿生成工具，一键创建精美PPT",
+    "url": "https://gamma.app",
+    "logo": "https://gamma.app/favicon.ico",
+    "categoryId": "ppt",
+    "subCategoryId": "ppt-oneclick",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 45200
+  },
+  {
+    "id": "beautiful-ai",
+    "name": "Beautiful.ai",
+    "description": "智能PPT设计工具，自动排版和美化演示文稿",
+    "url": "https://www.beautiful.ai",
+    "logo": "https://www.beautiful.ai/favicon.ico",
+    "categoryId": "ppt",
+    "subCategoryId": "ppt-layout",
+    "tags": [
+      "付费"
+    ],
+    "views": 22100
+  },
+  {
+    "id": "tome",
+    "name": "Tome",
+    "description": "AI叙事演示工具，将想法快速转化为精美的演示文稿",
+    "url": "https://tome.app",
+    "logo": "https://tome.app/favicon.ico",
+    "categoryId": "ppt",
+    "subCategoryId": "ppt-template",
+    "tags": [
+      "免费"
+    ],
+    "views": 31500
+  },
+  {
+    "id": "dalle",
+    "name": "DALL·E 3",
+    "description": "OpenAI的图像生成模型，根据文字描述生成高质量图片",
+    "url": "https://openai.com/dall-e-3",
+    "logo": "https://cdn.oaistatic.com/assets/favicon-o20kmmos.svg",
+    "categoryId": "image",
+    "subCategoryId": "image-t2i",
+    "tags": [
+      "热门",
+      "付费"
+    ],
+    "views": 67800
+  },
+  {
+    "id": "stable-diffusion",
+    "name": "Stable Diffusion",
+    "description": "开源的文生图AI模型，支持本地部署和自定义训练",
+    "url": "https://stability.ai",
+    "logo": "https://stability.ai/favicon.ico",
+    "categoryId": "image",
+    "subCategoryId": "image-t2i",
+    "tags": [
+      "免费",
+      "开源"
+    ],
+    "views": 58900
+  },
+  {
+    "id": "ideogram",
+    "name": "Ideogram",
+    "description": "擅长生成带有精确文字的AI图像，适合海报和标志设计",
+    "url": "https://ideogram.ai",
+    "logo": "https://ideogram.ai/favicon.ico",
+    "categoryId": "image",
+    "subCategoryId": "image-t2i",
+    "tags": [
+      "免费"
+    ],
+    "views": 32100
+  },
+  {
+    "id": "img2img-sd",
+    "name": "SD图生图",
+    "description": "基于Stable Diffusion的图生图功能，修改和优化现有图片",
+    "url": "https://stablediffusionweb.com",
+    "logo": "https://stablediffusionweb.com/favicon.ico",
+    "categoryId": "image",
+    "subCategoryId": "image-i2i",
+    "tags": [
+      "免费",
+      "开源"
+    ],
+    "views": 21300
+  },
+  {
+    "id": "canva-ai",
+    "name": "Canva AI",
+    "description": "Canva集成的AI图片编辑功能，支持智能抠图、背景生成等",
+    "url": "https://www.canva.com",
+    "logo": "https://static.canva.com/static/images/favicon-1.ico",
+    "categoryId": "image",
+    "subCategoryId": "image-edit",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 71200
+  },
+  {
+    "id": "photoroom",
+    "name": "PhotoRoom",
+    "description": "AI照片编辑工具，一键移除背景、添加阴影和调整构图",
+    "url": "https://www.photoroom.com",
+    "logo": "https://www.photoroom.com/favicon.ico",
+    "categoryId": "image",
+    "subCategoryId": "image-edit",
+    "tags": [
+      "免费"
+    ],
+    "views": 28700
+  },
+  {
+    "id": "remove-bg",
+    "name": "Remove.bg",
+    "description": "AI自动移除图片背景，支持人像、产品等多种场景",
+    "url": "https://www.remove.bg",
+    "logo": "https://www.remove.bg/favicon.ico",
+    "categoryId": "image",
+    "subCategoryId": "image-bg",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 49500
+  },
+  {
+    "id": "runway",
+    "name": "Runway",
+    "description": "AI视频生成和编辑平台，支持文生视频和图生视频",
+    "url": "https://runwayml.com",
+    "logo": "https://runwayml.com/favicon.ico",
+    "categoryId": "video",
+    "subCategoryId": "video-gen",
+    "tags": [
+      "热门",
+      "付费"
+    ],
+    "views": 52300
+  },
+  {
+    "id": "pika",
+    "name": "Pika",
+    "description": "AI视频生成工具，将文字和图片转化为短视频",
+    "url": "https://pika.art",
+    "logo": "https://pika.art/favicon.ico",
+    "categoryId": "video",
+    "subCategoryId": "video-gen",
+    "tags": [
+      "免费"
+    ],
+    "views": 38900
+  },
+  {
+    "id": "sora",
+    "name": "Sora",
+    "description": "OpenAI推出的文生视频模型，可生成长达一分钟的高质量视频",
+    "url": "https://openai.com/sora",
+    "logo": "https://cdn.oaistatic.com/assets/favicon-o20kmmos.svg",
+    "categoryId": "video",
+    "subCategoryId": "video-gen",
+    "tags": [
+      "热门"
+    ],
+    "views": 89100
+  },
+  {
+    "id": "heygen",
+    "name": "HeyGen",
+    "description": "AI数字人视频生成平台，支持多语言口播视频制作",
+    "url": "https://www.heygen.com",
+    "logo": "https://www.heygen.com/favicon.ico",
+    "categoryId": "video",
+    "subCategoryId": "video-avatar",
+    "tags": [
+      "热门",
+      "付费"
+    ],
+    "views": 41200
+  },
+  {
+    "id": "synthesia",
+    "name": "Synthesia",
+    "description": "AI虚拟人视频制作工具，无需拍摄即可生成专业视频",
+    "url": "https://www.synthesia.io",
+    "logo": "https://www.synthesia.io/favicon.ico",
+    "categoryId": "video",
+    "subCategoryId": "video-avatar",
+    "tags": [
+      "付费"
+    ],
+    "views": 33500
+  },
+  {
+    "id": "capcut-ai",
+    "name": "剪映AI",
+    "description": "字节跳动旗下视频编辑工具，集成AI字幕、特效等功能",
+    "url": "https://www.capcut.com",
+    "logo": "https://lf16-web-buz.capcut.com/obj/capcut-web-buz-us/common/images/favicon.ico",
+    "categoryId": "video",
+    "subCategoryId": "video-edit",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 62100
+  },
+  {
+    "id": "whisper",
+    "name": "Whisper",
+    "description": "OpenAI开源的语音识别模型，支持多语言自动字幕生成",
+    "url": "https://openai.com/research/whisper",
+    "logo": "https://cdn.oaistatic.com/assets/favicon-o20kmmos.svg",
+    "categoryId": "video",
+    "subCategoryId": "video-subtitle",
+    "tags": [
+      "免费",
+      "开源"
+    ],
+    "views": 35800
+  },
+  {
+    "id": "notion-ai",
+    "name": "Notion AI",
+    "description": "Notion集成的AI助手，支持文档写作、总结和翻译",
+    "url": "https://www.notion.so",
+    "logo": "https://www.notion.so/images/favicon.ico",
+    "categoryId": "office",
+    "subCategoryId": "office-doc",
+    "tags": [
+      "热门",
+      "付费"
+    ],
+    "views": 58700
+  },
+  {
+    "id": "copilot-365",
+    "name": "Microsoft Copilot",
+    "description": "微软Office 365集成的AI助手，提升办公效率",
+    "url": "https://copilot.microsoft.com",
+    "logo": "https://copilot.microsoft.com/favicon.ico",
+    "categoryId": "office",
+    "subCategoryId": "office-doc",
+    "tags": [
+      "热门",
+      "付费"
+    ],
+    "views": 47200
+  },
+  {
+    "id": "otter-ai",
+    "name": "Otter.ai",
+    "description": "AI会议记录工具，自动转录会议内容并生成摘要",
+    "url": "https://otter.ai",
+    "logo": "https://otter.ai/favicon.ico",
+    "categoryId": "office",
+    "subCategoryId": "office-meeting",
+    "tags": [
+      "免费"
+    ],
+    "views": 29300
+  },
+  {
+    "id": "github-copilot",
+    "name": "GitHub Copilot",
+    "description": "GitHub和OpenAI联合开发的AI编程助手，实时代码补全和生成",
+    "url": "https://github.com/features/copilot",
+    "logo": "https://github.githubassets.com/favicons/favicon.svg",
+    "categoryId": "coding",
+    "subCategoryId": "coding-gen",
+    "tags": [
+      "热门",
+      "付费"
+    ],
+    "views": 72100
+  },
+  {
+    "id": "cursor",
+    "name": "Cursor",
+    "description": "AI驱动的代码编辑器，集成GPT-4实现智能编程辅助",
+    "url": "https://cursor.sh",
+    "logo": "https://cursor.sh/favicon.ico",
+    "categoryId": "coding",
+    "subCategoryId": "coding-gen",
+    "tags": [
+      "热门",
+      "免费"
+    ],
+    "views": 55300
+  },
+  {
+    "id": "replit-ai",
+    "name": "Replit AI",
+    "description": "在线编程平台集成的AI助手，支持代码生成和调试",
+    "url": "https://replit.com",
+    "logo": "https://replit.com/public/icons/favicon-196.png",
+    "categoryId": "coding",
+    "subCategoryId": "coding-debug",
+    "tags": [
+      "免费"
+    ],
+    "views": 31200
+  },
+  {
+    "id": "codeium",
+    "name": "Codeium",
+    "description": "免费的AI代码补全工具，支持70+编程语言",
+    "url": "https://codeium.com",
+    "logo": "https://codeium.com/favicon.ico",
+    "categoryId": "coding",
+    "subCategoryId": "coding-gen",
+    "tags": [
+      "免费"
+    ],
+    "views": 28900
+  },
+  {
+    "id": "figma-ai",
+    "name": "Figma AI",
+    "description": "Figma集成的AI设计功能，智能生成UI组件和布局",
+    "url": "https://www.figma.com",
+    "logo": "https://static.figma.com/app/icon/1/favicon.ico",
+    "categoryId": "design",
+    "subCategoryId": "design-ui",
+    "tags": [
+      "热门"
+    ],
+    "views": 42800
+  },
+  {
+    "id": "looka",
+    "name": "Looka",
+    "description": "AI Logo设计工具，输入品牌信息自动生成Logo方案",
+    "url": "https://looka.com",
+    "logo": "https://looka.com/favicon.ico",
+    "categoryId": "design",
+    "subCategoryId": "design-logo",
+    "tags": [
+      "付费"
+    ],
+    "views": 25600
+  },
+  {
+    "id": "designs-ai",
+    "name": "Designs.ai",
+    "description": "AI设计套件，支持Logo、海报、视频等多种设计需求",
+    "url": "https://designs.ai",
+    "logo": "https://designs.ai/favicon.ico",
+    "categoryId": "design",
+    "subCategoryId": "design-poster",
+    "tags": [
+      "付费"
+    ],
+    "views": 19800
+  },
+  {
+    "id": "elevenlabs",
+    "name": "ElevenLabs",
+    "description": "最先进的AI语音合成工具，支持多语言和声音克隆",
+    "url": "https://elevenlabs.io",
+    "logo": "https://elevenlabs.io/favicon.ico",
+    "categoryId": "audio",
+    "subCategoryId": "audio-tts",
+    "tags": [
+      "热门",
+      "付费"
+    ],
+    "views": 45600
+  },
+  {
+    "id": "suno",
+    "name": "Suno",
+    "description": "AI音乐生成工具，通过文字描述创作完整歌曲",
+    "url": "https://suno.com",
+    "logo": "https://suno.com/favicon.ico",
+    "categoryId": "audio",
+    "subCategoryId": "audio-music",
+    "tags": [
+      "热门",
+      "免费"
+    ],
+    "views": 52300
+  },
+  {
+    "id": "udio",
+    "name": "Udio",
+    "description": "AI音乐创作平台，支持多种音乐风格和人声生成",
+    "url": "https://www.udio.com",
+    "logo": "https://www.udio.com/favicon.ico",
+    "categoryId": "audio",
+    "subCategoryId": "audio-music",
+    "tags": [
+      "免费"
+    ],
+    "views": 31200
+  },
+  {
+    "id": "adobe-podcast",
+    "name": "Adobe Podcast",
+    "description": "Adobe的AI音频编辑工具，一键降噪和语音增强",
+    "url": "https://podcast.adobe.com",
+    "logo": "https://podcast.adobe.com/favicon.ico",
+    "categoryId": "audio",
+    "subCategoryId": "audio-edit",
+    "tags": [
+      "免费"
+    ],
+    "views": 22100
+  },
+  {
+    "id": "character-ai",
+    "name": "Character.AI",
+    "description": "AI角色扮演聊天平台，与各种虚拟角色进行对话",
+    "url": "https://character.ai",
+    "logo": "https://character.ai/favicon.ico",
+    "categoryId": "fun",
+    "subCategoryId": "fun-roleplay",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 68900
+  },
+  {
+    "id": "perplexity",
+    "name": "Perplexity",
+    "description": "AI搜索引擎，通过对话方式获取精准答案和信息",
+    "url": "https://www.perplexity.ai",
+    "logo": "https://www.perplexity.ai/favicon.ico",
+    "categoryId": "fun",
+    "subCategoryId": "fun-chat",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 51200
+  },
+  {
+    "id": "poe",
+    "name": "Poe",
+    "description": "Quora推出的AI聊天平台，集成多个大模型供用户选择",
+    "url": "https://poe.com",
+    "logo": "https://poe.com/favicon.ico",
+    "categoryId": "fun",
+    "subCategoryId": "fun-chat",
+    "tags": [
+      "免费"
+    ],
+    "views": 35600
+  },
+  {
+    "id": "resumeai",
+    "name": "Resume.io",
+    "description": "AI简历生成工具，提供专业模板和智能内容建议",
+    "url": "https://resume.io",
+    "logo": "https://resume.io/favicon.ico",
+    "categoryId": "job",
+    "subCategoryId": "job-resume",
+    "tags": [
+      "付费"
+    ],
+    "views": 22300
+  },
+  {
+    "id": "kickresume",
+    "name": "Kickresume",
+    "description": "AI驱动的简历和求职信生成工具，支持多种行业模板",
+    "url": "https://www.kickresume.com",
+    "logo": "https://www.kickresume.com/favicon.ico",
+    "categoryId": "job",
+    "subCategoryId": "job-resume",
+    "tags": [
+      "免费"
+    ],
+    "views": 18900
+  },
+  {
+    "id": "deepl",
+    "name": "DeepL",
+    "description": "高质量AI翻译工具，翻译准确度领先，支持多种语言",
+    "url": "https://www.deepl.com",
+    "logo": "https://static.deepl.com/img/favicon/favicon_32.png",
+    "categoryId": "translate",
+    "subCategoryId": "translate-text",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 61200
+  },
+  {
+    "id": "immersive-translate",
+    "name": "沉浸式翻译",
+    "description": "双语对照翻译浏览器扩展，支持网页、PDF、视频字幕翻译",
+    "url": "https://immersivetranslate.com",
+    "logo": "https://immersivetranslate.com/favicon.ico",
+    "categoryId": "translate",
+    "subCategoryId": "translate-doc",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 42800
+  },
+  {
+    "id": "khanmigo",
+    "name": "Khanmigo",
+    "description": "可汗学院的AI学习助手，提供个性化学习辅导",
+    "url": "https://www.khanacademy.org/khan-labs",
+    "logo": "https://www.khanacademy.org/favicon.ico",
+    "categoryId": "learn",
+    "subCategoryId": "learn-assistant",
+    "tags": [
+      "免费"
+    ],
+    "views": 28700
+  },
+  {
+    "id": "elicit",
+    "name": "Elicit",
+    "description": "AI研究助手，帮助学者快速查找和分析学术论文",
+    "url": "https://elicit.com",
+    "logo": "https://elicit.com/favicon.ico",
+    "categoryId": "learn",
+    "subCategoryId": "learn-qa",
+    "tags": [
+      "免费"
+    ],
+    "views": 21300
+  },
+  {
+    "id": "harvey-ai",
+    "name": "Harvey AI",
+    "description": "专为法律行业设计的AI助手，支持合同审查和法律研究",
+    "url": "https://www.harvey.ai",
+    "logo": "https://www.harvey.ai/favicon.ico",
+    "categoryId": "legal",
+    "subCategoryId": "legal-contract",
+    "tags": [
+      "付费"
+    ],
+    "views": 15600
+  },
+  {
+    "id": "casetext",
+    "name": "Casetext",
+    "description": "AI法律研究平台，快速检索案例和法律文献",
+    "url": "https://casetext.com",
+    "logo": "https://casetext.com/favicon.ico",
+    "categoryId": "legal",
+    "subCategoryId": "legal-case",
+    "tags": [
+      "付费"
+    ],
+    "views": 12800
+  },
+  {
+    "id": "flair-ai",
+    "name": "Flair AI",
+    "description": "AI商品图生成工具，自动创建专业的产品展示图",
+    "url": "https://flair.ai",
+    "logo": "https://flair.ai/favicon.ico",
+    "categoryId": "ecommerce",
+    "subCategoryId": "ecommerce-image",
+    "tags": [
+      "付费"
+    ],
+    "views": 18900
+  },
+  {
+    "id": "describely",
+    "name": "Describely",
+    "description": "AI电商文案生成工具，自动撰写产品描述和营销文案",
+    "url": "https://describely.ai",
+    "logo": "https://describely.ai/favicon.ico",
+    "categoryId": "ecommerce",
+    "subCategoryId": "ecommerce-copy",
+    "tags": [
+      "付费"
+    ],
+    "views": 14200
+  },
+  {
+    "id": "bloomberg-gpt",
+    "name": "BloombergGPT",
+    "description": "彭博社开发的金融领域AI模型，专注于金融数据分析",
+    "url": "https://www.bloomberg.com",
+    "logo": "https://www.bloomberg.com/favicon.ico",
+    "categoryId": "finance",
+    "subCategoryId": "finance-report",
+    "tags": [
+      "付费"
+    ],
+    "views": 19800
+  },
+  {
+    "id": "alphasense",
+    "name": "AlphaSense",
+    "description": "AI驱动的市场情报平台，帮助投资者做出数据驱动的决策",
+    "url": "https://www.alpha-sense.com",
+    "logo": "https://www.alpha-sense.com/favicon.ico",
+    "categoryId": "finance",
+    "subCategoryId": "finance-stock",
+    "tags": [
+      "付费"
+    ],
+    "views": 16500
+  },
+  {
+    "id": "hubspot-ai",
+    "name": "HubSpot AI",
+    "description": "HubSpot集成的AI营销工具，自动生成营销内容和分析数据",
+    "url": "https://www.hubspot.com",
+    "logo": "https://www.hubspot.com/favicon.ico",
+    "categoryId": "marketing",
+    "subCategoryId": "marketing-social",
+    "tags": [
+      "付费"
+    ],
+    "views": 25600
+  },
+  {
+    "id": "surfer-seo",
+    "name": "Surfer SEO",
+    "description": "AI SEO优化工具，分析关键词并提供内容优化建议",
+    "url": "https://surferseo.com",
+    "logo": "https://surferseo.com/favicon.ico",
+    "categoryId": "marketing",
+    "subCategoryId": "marketing-seo",
+    "tags": [
+      "付费",
+      "热门"
+    ],
+    "views": 31200
+  },
+  {
+    "id": "tongyi",
+    "name": "通义千问",
+    "description": "阿里巴巴推出的大语言模型，支持多轮对话和内容创作",
+    "url": "https://tongyi.aliyun.com",
+    "logo": "https://img.alicdn.com/imgextra/i1/O1CN01AKUdEM1isPSBbCXo0_!!6000000004451-2-tps-512-512.png",
+    "categoryId": "llm",
+    "subCategoryId": "llm-cn",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 48900
+  },
+  {
+    "id": "doubao",
+    "name": "豆包",
+    "description": "字节跳动推出的AI对话助手，基于云雀大模型",
+    "url": "https://www.doubao.com",
+    "logo": "https://lf-flow-web-cdn.doubao.com/obj/flow-doubao/doubao/logo-icon-white-bg.png",
+    "categoryId": "llm",
+    "subCategoryId": "llm-cn",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 52100
+  },
+  {
+    "id": "kimi",
+    "name": "Kimi",
+    "description": "月之暗面推出的AI助手，支持20万字超长文本处理",
+    "url": "https://kimi.moonshot.cn",
+    "logo": "https://statics.moonshot.cn/kimi-chat/favicon.ico",
+    "categoryId": "llm",
+    "subCategoryId": "llm-cn",
+    "tags": [
+      "免费",
+      "热门"
+    ],
+    "views": 61200
+  },
+  {
+    "id": "zhipu",
+    "name": "智谱清言",
+    "description": "智谱AI推出的对话模型，支持代码生成和知识问答",
+    "url": "https://chatglm.cn",
+    "logo": "https://chatglm.cn/favicon.ico",
+    "categoryId": "llm",
+    "subCategoryId": "llm-cn",
+    "tags": [
+      "免费"
+    ],
+    "views": 32100
+  },
+  {
+    "id": "gpt4",
+    "name": "GPT-4",
+    "description": "OpenAI最强大的多模态大语言模型，支持文本和图像理解",
+    "url": "https://openai.com/gpt-4",
+    "logo": "https://cdn.oaistatic.com/assets/favicon-o20kmmos.svg",
+    "categoryId": "llm",
+    "subCategoryId": "llm-intl",
+    "tags": [
+      "热门",
+      "付费"
+    ],
+    "views": 85600
+  },
+  {
+    "id": "llama",
+    "name": "Llama 3",
+    "description": "Meta开源的大语言模型，性能强大且支持本地部署",
+    "url": "https://llama.meta.com",
+    "logo": "https://llama.meta.com/favicon.ico",
+    "categoryId": "llm",
+    "subCategoryId": "llm-intl",
+    "tags": [
+      "免费",
+      "开源"
+    ],
+    "views": 42300
+  },
+  {
+    "id": "mistral",
+    "name": "Mistral",
+    "description": "法国AI公司推出的高效大语言模型，性价比极高",
+    "url": "https://mistral.ai",
+    "logo": "https://mistral.ai/favicon.ico",
+    "categoryId": "llm",
+    "subCategoryId": "llm-intl",
+    "tags": [
+      "免费",
+      "开源"
+    ],
+    "views": 28900
+  },
+  {
+    "id": "openai-api",
+    "name": "OpenAI API",
+    "description": "OpenAI提供的API服务，支持GPT、DALL-E等模型的调用",
+    "url": "https://platform.openai.com",
+    "logo": "https://cdn.oaistatic.com/assets/favicon-o20kmmos.svg",
+    "categoryId": "llm",
+    "subCategoryId": "llm-api",
+    "tags": [
+      "付费",
+      "热门"
+    ],
+    "views": 72100
+  },
+  {
+    "id": "anthropic-api",
+    "name": "Anthropic API",
+    "description": "Anthropic提供的Claude模型API，支持企业级应用集成",
+    "url": "https://www.anthropic.com/api",
+    "logo": "https://www.anthropic.com/favicon.ico",
+    "categoryId": "llm",
+    "subCategoryId": "llm-api",
+    "tags": [
+      "付费"
+    ],
+    "views": 35600
+  }
+]
