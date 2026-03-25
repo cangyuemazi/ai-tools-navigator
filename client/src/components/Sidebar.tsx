@@ -1,18 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronRight, Flame, PenTool, Presentation, Image, Video, Briefcase, Code,
   Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale,
   ShoppingCart, TrendingUp, Megaphone, Brain, Home, Send, FileCheck, Info,
-  Handshake, PanelLeftClose, PanelLeftOpen, X,
+  Handshake, PanelLeftClose, PanelLeftOpen, X, Box,
 } from "lucide-react";
 import type { Category } from "@/types";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music,
   Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp,
-  Megaphone, Brain,
+  Megaphone, Brain, Box,
 };
 
 interface SidebarProps {
@@ -31,6 +31,17 @@ export default function Sidebar({
 }: SidebarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [location, setLocation] = useLocation();
+
+  // 👇 新增：动态请求后台设置的名称和Logo
+  const [siteSettings, setSiteSettings] = useState({ name: "智能零零AI工具", logo: "" });
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then(r => r.json())
+      .then(d => setSiteSettings(d))
+      .catch(() => {});
+  }, []);
+  // 👆 新增结束
 
   const toggleExpand = (categoryId: string) => {
     setExpandedCategories((prev) => {
@@ -67,7 +78,7 @@ export default function Sidebar({
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      {/* 顶部 Logo 与 标题 */}
+      {/* 👇 顶部 Logo 与 标题（改为动态渲染） */}
       <div 
         className="flex items-center h-[72px] px-6 shrink-0 cursor-pointer transition-all duration-300 hover:opacity-80"
         onClick={() => {
@@ -78,17 +89,25 @@ export default function Sidebar({
       >
         {collapsed ? (
           <div className="w-full flex justify-center">
-            <div className="w-10 h-10 rounded-[12px] bg-[#0071e3] flex items-center justify-center shadow-[0_4px_12px_rgba(0,113,227,0.3)]">
-              <span className="text-white font-semibold text-sm">AI</span>
-            </div>
+            {siteSettings.logo ? (
+              <img src={siteSettings.logo} className="w-10 h-10 rounded-[12px] object-contain shadow-[0_4px_12px_rgba(0,0,0,0.05)]" alt="logo" />
+            ) : (
+              <div className="w-10 h-10 rounded-[12px] bg-[#0071e3] flex items-center justify-center shadow-[0_4px_12px_rgba(0,113,227,0.3)]">
+                <span className="text-white font-semibold text-sm">AI</span>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-[10px] bg-[#0071e3] flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(0,113,227,0.3)]">
-              <span className="text-white font-semibold text-[13px]">AI</span>
-            </div>
-            <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-tight">
-              智能零零AI工具
+          <div className="flex items-center gap-3.5 flex-1 min-w-0">
+            {siteSettings.logo ? (
+              <img src={siteSettings.logo} className="w-9 h-9 rounded-[10px] object-contain shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.05)]" alt="logo" />
+            ) : (
+              <div className="w-9 h-9 rounded-[10px] bg-[#0071e3] flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(0,113,227,0.3)]">
+                <span className="text-white font-semibold text-[13px]">AI</span>
+              </div>
+            )}
+            <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-tight truncate">
+              {siteSettings.name}
             </span>
           </div>
         )}
@@ -97,7 +116,7 @@ export default function Sidebar({
       <div className="flex-1 overflow-y-auto py-4 px-3 scrollbar-thin">
         <nav className="space-y-1.5">
           {categories.map((category) => {
-            const IconComp = iconMap[category.icon] || Flame;
+            const IconComp = iconMap[category.icon] || Box; // 新增分类没有选图标时，默认用 Box 图标
             const hasChildren = category.children.length > 0;
             const isExpanded = expandedCategories.has(category.id);
             const active = isActive(category.id);
@@ -169,7 +188,7 @@ export default function Sidebar({
         </nav>
       </div>
 
-      <div className="p-4 shrink-0 space-y-1.5">
+      <div className="p-4 shrink-0 space-y-1.5 border-t border-[#e8e8ed] mt-4">
         {bottomLinks.map((link) => {
           const isLinkActive = location === link.path;
           return (

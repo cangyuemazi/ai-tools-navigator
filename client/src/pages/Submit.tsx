@@ -1,155 +1,88 @@
-/**
- * Submit Tool Page
- * Form to collect tool submissions from users.
- */
 import { useState } from "react";
-import { Link } from "wouter";
-import { Send, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import Layout from "@/components/Layout";
-import categoriesData from "@/data/categories.json";
-import type { Category } from "@/types";
-
-const categories = categoriesData as Category[];
+import { Send, CheckCircle2, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function Submit() {
+  const [formData, setFormData] = useState({ name: "", url: "", description: "", contactInfo: "" });
+  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    url: "",
-    description: "",
-    categoryId: "",
-    contactEmail: "",
-  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.url || !form.description || !form.categoryId) {
-      toast.error("请填写所有必填项");
-      return;
-    }
-    console.log("Submitted tool:", form);
-    setSubmitted(true);
-    toast.success("提交成功，我们会尽快审核！");
-  };
+    if (!formData.name || !formData.url) return alert("请填写工具名称和链接");
 
-  if (submitted) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center p-6 min-h-[80vh]">
-          <div className="bg-white rounded-2xl shadow-sm p-10 max-w-md w-full text-center">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">提交成功</h2>
-            <p className="text-gray-500 mb-6">感谢您的提交！我们会尽快审核并收录该工具。</p>
-            <Link href="/">
-              <Button variant="default" className="bg-blue-600 hover:bg-blue-700">
-                返回首页
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/submit-tool", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) setSubmitted(true);
+      else alert("提交失败，请重试");
+    } catch (err) {
+      alert("网络连接出错");
+    }
+    setLoading(false);
+  };
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto px-6 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">提交工具</h1>
-          <p className="text-gray-500 mt-2">发现了好用的AI工具？提交给我们，审核通过后将收录到网站中。</p>
-        </div>
+      <div className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-center p-6 py-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full">
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-8 space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              工具名称 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="例如：ChatGPT"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            />
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-[16px] bg-gradient-to-br from-[#0071e3] to-[#42a1ff] text-white shadow-lg mb-6">
+              <Send className="w-8 h-8 ml-1" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#1d1d1f] mb-4">提交您的 AI 工具</h1>
+            <p className="text-[16px] text-[#86868b] leading-relaxed">
+              让优质的工具被更多人看见。提交后，我们的编辑团队将进行审核，<br className="hidden md:block" />一旦通过即可在导航站展示。
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              官网链接 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="url"
-              value={form.url}
-              onChange={(e) => setForm({ ...form, url: e.target.value })}
-              placeholder="https://example.com"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            />
-          </div>
+          {submitted ? (
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[24px] p-10 text-center shadow-[0_12px_28px_rgba(0,0,0,0.06)] border border-[#e8e8ed]">
+              <CheckCircle2 className="w-16 h-16 text-[#34c759] mx-auto mb-4" />
+              <h2 className="text-2xl font-semibold text-[#1d1d1f] mb-2">提交成功！</h2>
+              <p className="text-[#86868b] mb-8">您的工具资料已进入审核队列，请留意您留下的联系方式，我们将尽快与您取得联系。</p>
+              <button onClick={() => { setSubmitted(false); setFormData({ name: "", url: "", description: "", contactInfo: "" }); }} className="px-6 py-3 bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] rounded-[12px] font-medium transition-colors">继续提交其他工具</button>
+            </motion.div>
+          ) : (
+            <div className="bg-white rounded-[24px] p-6 md:p-10 shadow-[0_12px_28px_rgba(0,0,0,0.04)] border border-[#e8e8ed]">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-[14px] font-medium text-[#1d1d1f] mb-2">产品名称 <span className="text-red-500">*</span></label>
+                    <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="例如：ChatGPT" className="w-full px-4 py-3 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[12px] focus:outline-none focus:border-[#0071e3] focus:ring-[3px] focus:ring-[#0071e3]/10 transition-all text-[15px]" />
+                  </div>
+                  <div>
+                    <label className="block text-[14px] font-medium text-[#1d1d1f] mb-2">产品链接 (URL) <span className="text-red-500">*</span></label>
+                    <input type="url" required value={formData.url} onChange={e => setFormData({ ...formData, url: e.target.value })} placeholder="https://" className="w-full px-4 py-3 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[12px] focus:outline-none focus:border-[#0071e3] focus:ring-[3px] focus:ring-[#0071e3]/10 transition-all text-[15px]" />
+                  </div>
+                </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              工具简介 <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="请简要描述该工具的功能和特点（不超过100字）"
-              rows={3}
-              maxLength={100}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
-            />
-            <p className="text-xs text-gray-400 mt-1">{form.description.length}/100</p>
-          </div>
+                <div>
+                  <label className="block text-[14px] font-medium text-[#1d1d1f] mb-2">一句话简介</label>
+                  <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="简短描述这款工具的核心功能与卖点..." className="w-full px-4 py-3 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[12px] focus:outline-none focus:border-[#0071e3] focus:ring-[3px] focus:ring-[#0071e3]/10 transition-all text-[15px] min-h-[100px] resize-y" />
+                </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              所属分类 <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={form.categoryId}
-              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
-            >
-              <option value="">请选择分类</option>
-              {categories.map((cat) => (
-                <optgroup key={cat.id} label={cat.name}>
-                  {cat.children.length > 0 ? (
-                    cat.children.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {sub.name}
-                      </option>
-                    ))
-                  ) : (
-                    <option value={cat.id}>{cat.name}</option>
-                  )}
-                </optgroup>
-              ))}
-            </select>
-          </div>
+                <div className="p-5 bg-[#0071e3]/[0.03] border border-[#0071e3]/10 rounded-[16px]">
+                  <label className="flex items-center gap-2 text-[14px] font-semibold text-[#0071e3] mb-2">
+                    <Sparkles className="w-4 h-4" /> 您的联系方式 (微信号 / 邮箱)
+                  </label>
+                  <p className="text-[13px] text-[#86868b] mb-3">方便我们审核通过后通知您，或商讨优先展示/专属高亮服务。</p>
+                  <input type="text" value={formData.contactInfo} onChange={e => setFormData({ ...formData, contactInfo: e.target.value })} placeholder="微信号：xxxx (选填，强烈建议填写)" className="w-full px-4 py-3 bg-white border border-[#d2d2d7] rounded-[12px] focus:outline-none focus:border-[#0071e3] focus:ring-[3px] focus:ring-[#0071e3]/10 transition-all text-[15px]" />
+                </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              联系邮箱（选填）
-            </label>
-            <input
-              type="email"
-              value={form.contactEmail}
-              onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
-              placeholder="your@email.com"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 text-sm font-medium"
-          >
-            <Send className="w-4 h-4 mr-2" />
-            提交工具
-          </Button>
-        </form>
+                <button type="submit" disabled={loading} className="w-full py-4 bg-[#0071e3] hover:bg-[#0077ED] text-white rounded-[12px] font-semibold text-[16px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_12px_rgba(0,113,227,0.3)]">
+                  {loading ? "提交中..." : "提交审核"}
+                </button>
+              </form>
+            </div>
+          )}
+        </motion.div>
       </div>
     </Layout>
   );

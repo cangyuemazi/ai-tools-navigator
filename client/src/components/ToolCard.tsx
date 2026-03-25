@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ExternalLink, Eye } from "lucide-react";
+import { ExternalLink, Eye, Sparkles } from "lucide-react";
 import type { Tool } from "@/types";
 
 interface ToolCardProps {
@@ -29,15 +29,28 @@ export default function ToolCard({ tool, index }: ToolCardProps) {
         <div
           className={`
             bg-[#ffffff] rounded-[20px] p-6 transition-all duration-300 ease-[cubic-bezier(0.2,0.9,0.4,1.1)]
-            border border-[#e8e8ed] active:scale-[0.98]
+            border active:scale-[0.98] relative overflow-hidden
+            ${tool.isSponsored ? "border-[#0071e3]/30" : "border-[#e8e8ed]"}
             ${isHovered
-              ? "shadow-[0_12px_28px_rgba(0,0,0,0.08)] -translate-y-1"
-              : "shadow-[0_8px_20px_rgba(0,0,0,0.04),0_2px_4px_rgba(0,0,0,0.02)]"
+              ? tool.isSponsored 
+                ? "shadow-[0_12px_28px_rgba(0,113,227,0.12)] -translate-y-1 border-[#0071e3]/50" 
+                : "shadow-[0_12px_28px_rgba(0,0,0,0.08)] -translate-y-1"
+              : tool.isSponsored
+                ? "shadow-[0_8px_20px_rgba(0,113,227,0.06),0_2px_4px_rgba(0,113,227,0.04)]"
+                : "shadow-[0_8px_20px_rgba(0,0,0,0.04),0_2px_4px_rgba(0,0,0,0.02)]"
             }
           `}
         >
+          {/* 金主专属：右上角高级感渐变角标 */}
+          {tool.isSponsored && (
+            <div className="absolute top-0 right-0 bg-gradient-to-bl from-[#0071e3] to-[#42a1ff] text-white text-[10px] font-bold tracking-wider px-3 py-1 rounded-bl-[12px] shadow-sm flex items-center gap-1 z-10">
+              <Sparkles className="w-3 h-3" />
+              推荐
+            </div>
+          )}
+
           <div className="flex items-center gap-4">
-            <div className="w-[52px] h-[52px] rounded-[14px] bg-[#f5f5f7] border border-[#e8e8ed] flex items-center justify-center shrink-0 overflow-hidden shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+            <div className={`w-[52px] h-[52px] rounded-[14px] bg-[#f5f5f7] border flex items-center justify-center shrink-0 overflow-hidden shadow-[0_2px_4px_rgba(0,0,0,0.02)] ${tool.isSponsored ? "border-[#0071e3]/20" : "border-[#e8e8ed]"}`}>
               {logoError ? (
                 <span className="text-[20px] font-semibold text-[#86868b]">
                   {tool.name.charAt(0)}
@@ -54,8 +67,7 @@ export default function ToolCard({ tool, index }: ToolCardProps) {
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                {/* 标题字重 600, 颜色 #1d1d1f */}
+              <div className="flex items-center gap-2 pr-10">
                 <h3 className="text-[17px] font-semibold text-[#1d1d1f] truncate tracking-tight leading-[1.2]">
                   {tool.name}
                 </h3>
@@ -65,7 +77,7 @@ export default function ToolCard({ tool, index }: ToolCardProps) {
                 {tool.tags.slice(0, 3).map((tag) => (
                   <span
                     key={tag}
-                    className="px-2.5 py-0.5 rounded-[12px] text-[12px] font-medium bg-[#f5f5f7] text-[#6e6e73] border border-[#e8e8ed]/60"
+                    className={`px-2.5 py-0.5 rounded-[12px] text-[12px] font-medium border ${tool.isSponsored ? "bg-[#0071e3]/[0.04] text-[#0071e3] border-[#0071e3]/10" : "bg-[#f5f5f7] text-[#6e6e73] border-[#e8e8ed]/60"}`}
                   >
                     {tag}
                   </span>
@@ -89,8 +101,7 @@ export default function ToolCard({ tool, index }: ToolCardProps) {
                 transition={{ duration: 0.3, ease: [0.2, 0.9, 0.4, 1.1] }}
                 className="overflow-hidden"
               >
-                {/* 正文色 #6e6e73, 行高 1.4 */}
-                <p className="mt-5 pt-4 border-t border-[#e8e8ed] text-[14px] text-[#6e6e73] leading-[1.4] line-clamp-3 font-normal">
+                <p className={`mt-5 pt-4 border-t text-[14px] leading-[1.4] line-clamp-3 font-normal ${tool.isSponsored ? "border-[#0071e3]/10 text-[#4a4a4f]" : "border-[#e8e8ed] text-[#6e6e73]"}`}>
                   {tool.description}
                 </p>
               </motion.div>

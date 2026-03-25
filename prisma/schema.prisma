@@ -43,3 +43,9 @@ model PendingTool {
   status      String   @default("pending") // pending, approved, rejected
   createdAt   DateTime @default(now())
 }
+// 网站全局设置表
+model SiteSetting {
+  id    String  @id @default("default")
+  name  String  @default("智能零零AI工具")
+  logo  String? // 网站自定义Logo
+}
