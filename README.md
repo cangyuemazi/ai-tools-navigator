@@ -2,117 +2,127 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React](https://img.shields.io/badge/React-19.2-blue)
-![Vite](https://img.shields.io/badge/Vite-7.1-646CFF)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1-38B2AC)
 ![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748)
-![Express](https://img.shields.io/badge/Express-Backend-000000)
+![SQLite](https://img.shields.io/badge/Database-SQLite-003B57)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC)
 
-**智能零零 AI 工具导航站** 已经从一个静态网页，正式进化为一个**全栈驱动 (Full-Stack)**、具有极高商业落地价值的现代人工智能工具分发平台。
+**智能零零 AI 工具导航站** 是一款面向商业化落地的现代化、全栈式 AI 资源收录与分发平台。
 
-本项目不仅在 UI/UX 上深度融入了 Apple 级的设计规范（微暖灰底色、毛玻璃拟态、多层弥散阴影、物理级弹簧动效），在底层架构上更采用了强大的 **SQLite + Prisma ORM + Express API** 的前后端分离架构，支持商业赞助高亮与权重优先排序。
+本项目不仅追求 **Apple 级的极致视觉美学**，更在底层架构上实现了完整的**商业闭环**：从前端客户自助提交、到后台微信联系谈合作，再到一键开启赞助高亮置顶，为您提供了一套开箱即用的 AI 导航站解决方案。
 
 ---
 
-## ✨ 核心商业级亮点 (Key Features)
+## ✨ 核心亮点 (Key Features)
 
-### 🚀 真正的全栈与数据库驱动
-* **告别静态 JSON**：全站数据由底层关系型数据库 (SQLite) 强力驱动，通过 Express.js 提供标准 RESTful API，为未来的管理后台与高并发访问打下坚实基础。
-* **商业赞助优先展示**：底层 API 原生集成商业化排序逻辑。被标记为“已赞助”(`isSponsored: true`) 的工具将无视流量规则，永远霸占对应分类的黄金头部广告位。
+### 💰 完整的商业变现链路
+* **自助提交系统**：前台内置精美的提交页面，引导开发者留下联系方式（微信/邮箱），自动进入后台待审核池。
+* **赞助商置顶 (Sponsored)**：支持后台一键开启“赞助高亮”模式。开启后，该工具将无视流量排名，永久固定在对应分类及首页的最黄金位置。
+* **Pro 推荐标识**：付费工具自动佩戴带有发光阴影和微渐变效果的“✨ 推荐”角标，尊享金主排面。
 
-### 🎨 Apple 级极致视觉美学
-* **色彩体系**：采用经典的 `#F5F5F7` 微暖灰作为全局主背景，卡片纯白悬浮，配合 `#0071E3` 经典苹果蓝交互色。
-* **毛玻璃拟态 (Glassmorphism)**：在移动端导航栏、常驻悬浮组件等层级使用了精准的 `backdrop-blur`，视觉通透高级。
-* **物理缓行动效**：深度集成 `Framer Motion`，卡片 Hover 时呈现极具真实物理质感的 `translateY(-4px)` 上浮与 `cubic-bezier` 弹簧缩放。
+### ⚙️ 强大的秘密管理后台 (Admin Console)
+* **工具管理**：支持对全站 AI 工具进行增删改查，内置**子分类联动选择**。
+* **分类目录系统**：支持无限添加主分类与二级子分类，可自定义 Lucide 图标。
+* **一键“动态换皮”**：无需修改任何代码，直接在后台上传新 Logo、修改网站名称，全站（包括侧边栏、移动端导航、标题）实时生效。
+* **审核池中心**：集中管理用户提交的意向产品，支持“一键录入”与“信息预填充”。
 
-### 🧱 绝对稳定的真·瀑布流布局
-* 彻底解决传统 CSS 多列布局（`columns`）导致的代码排版错乱 Bug。
-* 采用 **JS 动态分列引擎**，卡片长文本展开时，绝对只平移当前列，相邻列稳如泰山，视觉体验极度舒适。
+### 🎨 Apple 级视觉规范 (UI/UX)
+* **极简主义**：采用 `#F5F5F7` 微暖灰底色与纯白卡片，呼吸感十足。
+* **毛玻璃特效**：全站多处应用 `backdrop-blur-[20px]`，在滚动时呈现通透的高级感。
+* **物理级动效**：基于 `Framer Motion` 的 `cubic-bezier(0.2, 0.9, 0.4, 1.1)` 弹簧动效，提供真实的交互反馈。
 
 ---
 
 ## 🛠️ 技术架构 (Tech Stack)
 
-* **前端 (Client)**：React 19 + Vite 7 + Tailwind CSS v4 + Framer Motion
-* **后端 (Server)**：Node.js + Express.js
-* **数据库 & ORM**：SQLite + Prisma v6
-* **进程管理**：Concurrently (支持单命令同时启动前后端)
+* **前端**：React 19 + Vite 7 + Tailwind CSS v4 + Wouter
+* **后端**：Node.js + Express.js
+* **数据库**：SQLite (轻量、高效、无需额外部署)
+* **ORM 引擎**：Prisma v6 (强类型安全)
+* **文件处理**：Multer (支持本地图片上传与图床化管理)
 
 ---
 
 ## 🚀 快速启动 (Getting Started)
 
-本项目使用 `pnpm` 作为包管理器。请确保你的本地已安装 Node.js 和 pnpm。
-
-### 1. 克隆项目与安装依赖
-```
+### 1. 克隆与安装
+```bash
 git clone [https://github.com/cangyuemazi/ai-tools-navigator.git](https://github.com/cangyuemazi/ai-tools-navigator.git)
 cd ai-tools-navigator
 pnpm install
 ```
 
-### 2. 初始化数据库与模型同步
-
-生成本地 SQLite 数据库文件（`dev.db`）并同步 Prisma 模型：
+### 2. 数据库初始化
 
 Bash
 
 ```
+# 生成本地数据库文件并同步结构
 pnpm prisma db push
-```
 
-### 3. （可选）导入初始数据
-
-如果你是第一次运行且数据库为空，可通过内置脚本将旧的 JSON 数据一键导入至 SQLite 数据库中：
-
-Bash
-
-```
+# (可选) 如果需要导入初始 JSON 数据
 pnpm dlx tsx scripts/seed.ts
 ```
 
-### 4. 一键启动全栈服务 🛫
+### 3. 配置环境变量
+
+在根目录创建 `.env` 文件：
+
+代码段
+
+```
+DATABASE_URL="file:./dev.db"
+ADMIN_PASSWORD="您的管理后台密码"
+```
+
+### 4. 一键启动服务
 
 Bash
 
 ```
+# 同时启动前端 (3000) 和 后端 (3001)
 pnpm run dev
 ```
 
-此命令将同时唤醒：
+------
 
-- **后端 API 服务**：运行在 `http://localhost:3001`
-- **前端 Vite 服务**：运行在 `http://localhost:3000` (内置自动代理转发至后端)
+## 📂 商业运营操作指南
 
-启动后，浏览器访问 `http://localhost:3000` 即可体验。
+### 如何管理数据？
+
+访问 `http://localhost:3000/admin`，输入您在 `.env` 中设置的密码即可进入。
+
+- **录入新产品**：在“工具管理”中点击新增，支持上传本地图片作为 Logo。
+- **开启置顶**：在编辑弹窗底部开启“⭐ 设为付费赞助置顶”，并设置到期时间。
+- **处理申请**：在“审核中心”查看开发者留下的微信，谈好合作后点击“收录并编辑”。
+
+### 如何更换网站 Logo 和名称？
+
+进入后台 -> **网站设置** -> 上传您的 Logo 图片并修改名称 -> 保存。首页将瞬间刷新呈现您的品牌。
 
 ------
 
-## 📂 核心目录结构 (Project Structure)
+## 📁 目录结构说明
 
 Plaintext
 
 ```
-ai-tools-navigator/
-├── client/              # 前端 React 源码与页面
-├── server/              # 后端 Express 源码 (API 接口定义)
-├── prisma/              # 数据库模型 (schema.prisma) 与本地数据库文件
-├── scripts/             # 自动化脚本 (如数据库导入脚本 seed.ts)
-├── package.json         # 项目依赖与一键启动命令配置
-└── vite.config.ts       # Vite 配置 (包含 API 代理配置)
+├── client/              # 前端源码
+│   ├── src/pages/       # 页面逻辑 (Home, Admin, Submit等)
+│   ├── src/components/  # 核心组件 (Sidebar, ToolCard等)
+│   └── public/uploads/  # 自动生成的本地图片存储目录
+├── server/              # 后端 Express 源码 (API 路由与安全鉴权)
+├── prisma/              # 数据库模型定义 (Schema)
+└── scripts/             # 数据库迁移与初始化脚本
 ```
 
 ------
 
-## 💡 常见问题 (FAQ / Troubleshooting)
+## 💡 开发者必看 (FAQ)
 
-**Q: 在 Windows 的 VS Code 终端运行 pnpm 报错 `因为在此系统上禁止运行脚本` 怎么办？** A: 这是 Windows 默认的安全策略限制。请以**管理员身份**打开 Windows PowerShell，运行以下命令即可永久解决：
+**Q：为什么上传图片后前台没反应？** A：项目已配置自动目录检测，请确保 `client/public/uploads` 存在。上传后的图片由 Express 静态路由托管。
 
-PowerShell
-
-```
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
+**Q：如何部署到线上服务器？** A：建议使用 PM2 托管后端，前端通过 `pnpm build` 打包。如果是 Vercel 部署，请将 SQLite 替换为 PostgreSQL 或 Supabase。
 
 ------
 
-*✨ Designed with minimal aesthetics. Powered by 智能零零 & 你的努力.*
+*✨ Designed by 智能零零 & 你的努力. 祝您的 AI 导航站流量长虹，早日变现！*
