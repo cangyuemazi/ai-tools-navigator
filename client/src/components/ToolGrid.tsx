@@ -39,9 +39,11 @@ export default function ToolGrid({ tools, categories, selectedCategoryId }: Tool
 
       {/* Tool Cards Grid */}
       {tools.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+        <div className="columns-1 md:columns-2 xl:columns-3 2xl:columns-4 gap-6 space-y-6">
           {tools.map((tool, index) => (
-            <ToolCard key={tool.id} tool={tool} index={index} />
+            <div key={tool.id} className="break-inside-avoid">
+              <ToolCard tool={tool} index={index} />
+            </div>
           ))}
         </div>
       ) : (

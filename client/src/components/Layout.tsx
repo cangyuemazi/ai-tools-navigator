@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import Sidebar from "./Sidebar";
+import FloatingWidgets from "./FloatingWidgets";
 import categoriesData from "@/data/categories.json";
 import type { Category } from "@/types";
 
@@ -48,7 +49,7 @@ export default function Layout({
       />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+      <main id="main-scroll-container" className="flex-1 overflow-y-auto scroll-smooth relative bg-[#f8fafc]">
         {/* Mobile Header */}
         {showMobileHeader && (
           <div className="lg:hidden sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 flex items-center gap-3">
@@ -68,6 +69,7 @@ export default function Layout({
         )}
 
         {children}
+        <FloatingWidgets />
       </main>
     </div>
   );

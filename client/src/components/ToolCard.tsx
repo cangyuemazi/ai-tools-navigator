@@ -42,13 +42,12 @@ export default function ToolCard({ tool, index }: ToolCardProps) {
       >
         <div
           className={`
-            bg-white rounded-2xl p-5 transition-all duration-200
-            border border-transparent
-            ${isHovered
-              ? "shadow-lg shadow-blue-100/50 border-blue-200 -translate-y-0.5"
-              : "shadow-sm hover:shadow-md"
-            }
-          `}
+          bg-white rounded-2xl p-5 transition-all duration-300 ease-out border
+          ${isHovered
+            ? "shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] border-blue-100 -translate-y-1.5"
+            : "shadow-sm border-gray-100/60"
+          }
+        `}
         >
           {/* Card Header */}
           <div className="flex items-center gap-4">
