@@ -13,7 +13,6 @@ export default function ToolGrid({ tools, categories, selectedCategoryId }: Tool
   const [cols, setCols] = useState(4);
 
   useEffect(() => {
-    // 动态监听屏幕宽度，决定分几列
     const updateCols = () => {
       if (window.innerWidth >= 1536) setCols(4);
       else if (window.innerWidth >= 1280) setCols(3);
@@ -29,14 +28,11 @@ export default function ToolGrid({ tools, categories, selectedCategoryId }: Tool
     if (!selectedCategoryId) return "全部工具";
     for (const cat of categories) {
       if (cat.id === selectedCategoryId) return cat.name;
-      for (const sub of cat.children) {
-        if (sub.id === selectedCategoryId) return sub.name;
-      }
+      for (const sub of cat.children) return sub.name;
     }
     return "全部工具";
   };
 
-  // 物理级隔离方案：把数据分配进独立的列数组中
   const columnsData = Array.from({ length: cols }, () => [] as Tool[]);
   tools.forEach((tool, index) => {
     columnsData[index % cols].push(tool);
@@ -45,8 +41,8 @@ export default function ToolGrid({ tools, categories, selectedCategoryId }: Tool
   return (
     <div className="w-full">
       <div className="mb-8">
-        <h2 className="text-[26px] font-bold tracking-tight text-zinc-900">{getCategoryName()}</h2>
-        <p className="text-[15px] text-zinc-500 mt-2 font-medium">收录了 {tools.length} 款精选工具</p>
+        <h2 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">{getCategoryName()}</h2>
+        <p className="text-[15px] text-[#86868b] mt-2">为您收录了 {tools.length} 款优质工具</p>
       </div>
 
       {tools.length > 0 ? (
@@ -60,10 +56,10 @@ export default function ToolGrid({ tools, categories, selectedCategoryId }: Tool
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-32 text-zinc-400 bg-white/40 rounded-[32px] border border-black/[0.02] shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
-          <PackageOpen className="w-16 h-16 mb-6 text-zinc-300 stroke-[1.5]" />
-          <p className="text-lg font-medium text-zinc-600">这里还是空的</p>
-          <p className="text-sm mt-2 text-zinc-400">这个分类的工具正在赶来的路上</p>
+        <div className="flex flex-col items-center justify-center py-32 text-[#86868b] bg-white rounded-[24px] border border-[#e8e8ed] shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+          <PackageOpen className="w-16 h-16 mb-6 text-[#d2d2d7] stroke-[1.5]" />
+          <p className="text-[17px] font-medium text-[#1d1d1f]">这里还是空的</p>
+          <p className="text-[14px] mt-2 text-[#86868b]">该分类下暂未收录工具，敬请期待</p>
         </div>
       )}
     </div>

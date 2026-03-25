@@ -67,8 +67,9 @@ export default function Sidebar({
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
+      {/* 顶部 Logo 与 标题 */}
       <div 
-        className="flex items-center h-20 px-6 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+        className="flex items-center h-[72px] px-6 shrink-0 cursor-pointer transition-all duration-300 hover:opacity-80"
         onClick={() => {
           if (location !== "/") setLocation("/");
           onSelectCategory(null, null);
@@ -77,24 +78,24 @@ export default function Sidebar({
       >
         {collapsed ? (
           <div className="w-full flex justify-center">
-            <div className="w-10 h-10 rounded-[10px] bg-black flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-sm tracking-widest">AI</span>
+            <div className="w-10 h-10 rounded-[12px] bg-[#0071e3] flex items-center justify-center shadow-[0_4px_12px_rgba(0,113,227,0.3)]">
+              <span className="text-white font-semibold text-sm">AI</span>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-[10px] bg-black flex items-center justify-center shrink-0 shadow-md">
-              <span className="text-white font-bold text-sm tracking-widest">AI</span>
+          <div className="flex items-center gap-3.5">
+            <div className="w-9 h-9 rounded-[10px] bg-[#0071e3] flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(0,113,227,0.3)]">
+              <span className="text-white font-semibold text-[13px]">AI</span>
             </div>
-            <span className="text-[17px] font-bold text-zinc-900 tracking-tight">
-              智能零零
+            <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-tight">
+              智能零零AI工具
             </span>
           </div>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto py-2 px-3 scrollbar-thin">
-        <nav className="space-y-1">
+      <div className="flex-1 overflow-y-auto py-4 px-3 scrollbar-thin">
+        <nav className="space-y-1.5">
           {categories.map((category) => {
             const IconComp = iconMap[category.icon] || Flame;
             const hasChildren = category.children.length > 0;
@@ -106,22 +107,22 @@ export default function Sidebar({
                 <button
                   onClick={() => handleCategoryClick(category.id, hasChildren)}
                   className={`
-                    w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[14px] transition-all duration-300 ease-out border
+                    w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[14px] transition-all duration-300 ease-[cubic-bezier(0.2,0.9,0.4,1.1)]
                     ${active
-                      ? "bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)] border-black/[0.04] text-zinc-900 font-semibold"
-                      : "text-zinc-500 hover:bg-black/[0.04] hover:text-zinc-900 border-transparent"
+                      ? "bg-[#0071e3]/[0.08] text-[#0071e3] font-semibold"
+                      : "text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3]"
                     }
                     ${collapsed ? "justify-center px-0" : ""}
                   `}
                   title={collapsed ? category.name : undefined}
                 >
-                  <IconComp className={`w-[18px] h-[18px] shrink-0 ${active ? "text-zinc-900" : "text-zinc-400"}`} />
+                  <IconComp className={`w-[18px] h-[18px] shrink-0 transition-colors ${active ? "text-[#0071e3]" : "text-[#86868b]"}`} />
                   {!collapsed && (
                     <>
                       <span className="flex-1 text-left truncate">{category.name}</span>
                       {hasChildren && (
                         <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
-                          <ChevronRight className="w-4 h-4 text-zinc-400" />
+                          <ChevronRight className="w-4 h-4 text-[#86868b]" />
                         </motion.div>
                       )}
                     </>
@@ -138,7 +139,7 @@ export default function Sidebar({
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="overflow-hidden"
                       >
-                        <div className="ml-5 pl-4 py-1 space-y-1">
+                        <div className="ml-5 pl-4 py-1.5 space-y-1">
                           {category.children.map((sub) => {
                             const subActive = isActive(category.id, sub.id);
                             return (
@@ -146,10 +147,10 @@ export default function Sidebar({
                                 key={sub.id}
                                 onClick={() => handleSubCategoryClick(category.id, sub.id)}
                                 className={`
-                                  w-full text-left px-3 py-2 rounded-[10px] text-[13px] transition-all duration-300 border
+                                  w-full text-left px-3 py-2 rounded-[10px] text-[13px] transition-all duration-300
                                   ${subActive
-                                    ? "bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] border-black/[0.04] text-zinc-900 font-semibold"
-                                    : "text-zinc-500 hover:bg-black/[0.04] hover:text-zinc-900 border-transparent"
+                                    ? "bg-[#0071e3]/[0.06] text-[#0071e3] font-semibold"
+                                    : "text-[#86868b] hover:bg-[#0071e3]/[0.03] hover:text-[#0071e3]"
                                   }
                                 `}
                               >
@@ -168,7 +169,7 @@ export default function Sidebar({
         </nav>
       </div>
 
-      <div className="p-3 shrink-0 space-y-1">
+      <div className="p-4 shrink-0 space-y-1.5">
         {bottomLinks.map((link) => {
           const isLinkActive = location === link.path;
           return (
@@ -180,26 +181,26 @@ export default function Sidebar({
                 onMobileClose();
               }}
               className={`
-                flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[14px] transition-all duration-300 ease-out border
+                flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[14px] transition-all duration-300 ease-[cubic-bezier(0.2,0.9,0.4,1.1)]
                 ${isLinkActive
-                  ? "bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)] border-black/[0.04] text-zinc-900 font-semibold"
-                  : "text-zinc-500 hover:bg-black/[0.04] hover:text-zinc-900 border-transparent"
+                  ? "bg-[#0071e3]/[0.08] text-[#0071e3] font-semibold"
+                  : "text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3]"
                 }
                 ${collapsed ? "justify-center px-0" : ""}
               `}
               title={collapsed ? link.label : undefined}
             >
-              <link.icon className={`w-[18px] h-[18px] shrink-0 ${isLinkActive ? "text-zinc-900" : "text-zinc-400"}`} />
+              <link.icon className={`w-[18px] h-[18px] shrink-0 ${isLinkActive ? "text-[#0071e3]" : "text-[#86868b]"}`} />
               {!collapsed && <span>{link.label}</span>}
             </Link>
           );
         })}
       </div>
 
-      <div className="p-3 shrink-0 hidden lg:block">
+      <div className="p-4 pt-0 shrink-0 hidden lg:block">
         <button
           onClick={onToggleCollapse}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-[12px] text-[13px] font-medium text-zinc-400 hover:bg-black/[0.04] hover:text-zinc-700 transition-all duration-300"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-[12px] text-[13px] font-medium text-[#86868b] hover:bg-[#e8e8ed]/50 hover:text-[#1d1d1f] transition-all duration-300"
         >
           {collapsed ? <PanelLeftOpen className="w-[18px] h-[18px]" /> : (
             <><PanelLeftClose className="w-[18px] h-[18px]" /><span>收起边栏</span></>
@@ -213,9 +214,9 @@ export default function Sidebar({
     <>
       <aside
         className={`
-          hidden lg:flex flex-col h-screen shrink-0 border-r border-black/[0.04] bg-transparent
-          transition-all duration-400 ease-[cubic-bezier(0.25,1,0.5,1)] sticky top-0
-          ${collapsed ? "w-20" : "w-[280px]"}
+          hidden lg:flex flex-col h-screen shrink-0 border-r border-[#e8e8ed] bg-[#f5f5f7]
+          transition-all duration-400 ease-[cubic-bezier(0.2,0.9,0.4,1.1)] sticky top-0
+          ${collapsed ? "w-[80px]" : "w-[280px]"}
         `}
       >
         {sidebarContent}
@@ -226,20 +227,20 @@ export default function Sidebar({
           <>
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.3 }}
+              animate={{ opacity: 0.4 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="fixed inset-0 bg-black z-40 lg:hidden"
+              className="fixed inset-0 bg-black z-40 lg:hidden backdrop-blur-sm"
               onClick={onMobileClose}
             />
             <motion.aside
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
-              transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-              className="fixed left-0 top-0 h-screen w-[280px] bg-[#F5F5F7] z-50 lg:hidden shadow-2xl"
+              transition={{ duration: 0.4, ease: [0.2, 0.9, 0.4, 1.1] }}
+              className="fixed left-0 top-0 h-screen w-[280px] bg-[#f5f5f7] z-50 lg:hidden shadow-2xl"
             >
-              <button onClick={onMobileClose} className="absolute top-6 right-4 p-2 rounded-full text-zinc-400 hover:text-zinc-800 hover:bg-black/[0.04]">
+              <button onClick={onMobileClose} className="absolute top-5 right-4 p-2 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]/80 transition-colors">
                 <X className="w-5 h-5" />
               </button>
               {sidebarContent}
