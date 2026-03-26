@@ -20,6 +20,7 @@ model Tool {
   views         Int       @default(0)
   isSponsored   Boolean   @default(false)
   sponsorExpiry DateTime?
+  order         Int       @default(0) // 👈 新增：工具的自定义排序权重 (越高越排在前面)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -39,13 +40,21 @@ model PendingTool {
   name        String
   description String
   url         String
+  logo        String?  // 👈 新增：客户前台提交上来的 Logo 链接
   contactInfo String?  // 客户联系方式（微信/邮箱）
   status      String   @default("pending") // pending, approved, rejected
   createdAt   DateTime @default(now())
 }
+
 // 网站全局设置表
 model SiteSetting {
-  id    String  @id @default("default")
-  name  String  @default("智能零零AI工具")
-  logo  String? // 网站自定义Logo
+  id              String  @id @default("default")
+  name            String  @default("智能零零AI工具")
+  logo            String? // 网站自定义Logo
+  favicon         String? // 👈 新增：浏览器标签页小图标 (Favicon)
+  titleFontSize   Int     @default(17) // 👈 新增：网站标题字体大小
+  backgroundColor String  @default("#f5f5f7") // 👈 新增：网站全局背景色
+  companyIntro    String? // 👈 新增：公司简介
+  icp             String? // 👈 新增：备案号
+  email           String? // 👈 新增：联系邮箱
 }
