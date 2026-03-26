@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Home, Send, FileCheck, Info, Handshake, PanelLeftClose, PanelLeftOpen, X, Box } from "lucide-react";
+import { ChevronRight, Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Home, Send, Info, Handshake, PanelLeftClose, PanelLeftOpen, X, Box } from "lucide-react";
 import type { Category } from "@/types";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = { Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Box };
@@ -13,12 +13,51 @@ export default function Sidebar({ categories, selectedCategoryId, onSelectCatego
   const [location, setLocation] = useLocation();
   const [siteSettings, setSiteSettings] = useState({ name: "智能零零AI工具", logo: "", titleFontSize: 17 });
 
+  const [sidebarWidth, setSidebarWidth] = useState(() => parseInt(localStorage.getItem("sidebarWidth") || "280"));
+  const [isDragging, setIsDragging] = useState(false);
+
   useEffect(() => { fetch("/api/settings").then(r => r.json()).then(d => setSiteSettings(d)).catch(()=>{}); }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      let newWidth = e.clientX;
+      if (newWidth < 220) newWidth = 220; 
+      if (newWidth > 450) newWidth = 450; 
+      setSidebarWidth(newWidth);
+    };
+    const handleMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        localStorage.setItem("sidebarWidth", sidebarWidth.toString());
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    };
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = 'col-resize'; 
+      document.body.style.userSelect = 'none'; 
+    }
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, sidebarWidth]);
 
   const toggleExpand = (id: string) => { setExpandedCategories(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; }); };
   const handleCatClick = (id: string, hasC: boolean) => { if (hasC && !collapsed) toggleExpand(id); if (location !== "/") setLocation(`/?category=${id}`); onSelectCategory(id, null); };
   const handleSubClick = (cId: string, sId: string) => { if (location !== "/") setLocation(`/?category=${cId}&sub=${sId}`); onSelectCategory(cId, sId); };
   const isActive = (cId: string, sId?: string) => sId ? selectedCategoryId === sId : selectedCategoryId === cId;
+
+  // 👇 这里已经删除了 "数据校验" 按钮
+  const bottomLinks = [
+    { path: "/", icon: Home, label: "首页" },
+    { path: "/submit", icon: Send, label: "提交工具" },
+    { path: "/about", icon: Info, label: "关于我们" },
+    { path: "/partners", icon: Handshake, label: "商务合作" },
+  ];
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -28,16 +67,17 @@ export default function Sidebar({ categories, selectedCategoryId, onSelectCatego
         ) : (
           <div className="flex items-center gap-3.5 flex-1 min-w-0">
             {siteSettings.logo ? <img src={siteSettings.logo} className="w-9 h-9 rounded-[10px] object-contain shrink-0 shadow-sm" /> : <div className="w-9 h-9 rounded-[10px] bg-[#0071e3] flex items-center justify-center shrink-0"><span className="text-white font-semibold text-[13px]">AI</span></div>}
-            {/* 👇 动态应用你在后台设置的字体大小 */}
             <span className="font-semibold text-[#1d1d1f] tracking-tight truncate" style={{ fontSize: `${siteSettings.titleFontSize}px` }}>{siteSettings.name}</span>
           </div>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto py-4 px-3 scrollbar-thin"><nav className="space-y-1.5">{categories.map((cat) => { const IconComp = iconMap[cat.icon] || Box; const hasC = cat.children.length > 0; const isExp = expandedCategories.has(cat.id); const act = isActive(cat.id); return (<div key={cat.id}><button onClick={() => handleCatClick(cat.id, hasC)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[14px] transition-all ${act ? "bg-[#0071e3]/[0.08] text-[#0071e3] font-semibold" : "text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3]"} ${collapsed ? "justify-center px-0" : ""}`}><IconComp className={`w-[18px] h-[18px] shrink-0 ${act ? "text-[#0071e3]" : "text-[#86868b]"}`} />{!collapsed && <><span className="flex-1 text-left truncate">{cat.name}</span>{hasC && <motion.div animate={{ rotate: isExp ? 90 : 0 }}><ChevronRight className="w-4 h-4 text-[#86868b]" /></motion.div>}</>}</button>{!collapsed && isExp && hasC && (<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden"><div className="ml-5 pl-4 py-1.5 space-y-1">{cat.children.map((sub:any) => (<button key={sub.id} onClick={() => handleSubClick(cat.id, sub.id)} className={`w-full text-left px-3 py-2 rounded-[10px] text-[13px] transition-all ${isActive(cat.id, sub.id) ? "bg-[#0071e3]/[0.06] text-[#0071e3] font-semibold" : "text-[#86868b] hover:bg-[#0071e3]/[0.03] hover:text-[#0071e3]"}`}>{sub.name}</button>))}</div></motion.div>)}</div>); })}</nav></div>
+      <div className="flex-1 overflow-y-auto py-4 px-3 scrollbar-thin">
+        <nav className="space-y-1.5">{categories.map((cat) => { const IconComp = iconMap[cat.icon] || Box; const hasC = cat.children?.length > 0; const isExp = expandedCategories.has(cat.id); const act = isActive(cat.id); return (<div key={cat.id}><button onClick={() => handleCatClick(cat.id, hasC)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[14px] transition-all ${act ? "bg-[#0071e3]/[0.08] text-[#0071e3] font-semibold" : "text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3]"} ${collapsed ? "justify-center px-0" : ""}`}><IconComp className={`w-[18px] h-[18px] shrink-0 ${act ? "text-[#0071e3]" : "text-[#86868b]"}`} />{!collapsed && <><span className="flex-1 text-left truncate">{cat.name}</span>{hasC && <motion.div animate={{ rotate: isExp ? 90 : 0 }}><ChevronRight className="w-4 h-4 text-[#86868b]" /></motion.div>}</>}</button>{!collapsed && isExp && hasC && (<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden"><div className="ml-5 pl-4 py-1.5 space-y-1">{cat.children.map((sub:any) => (<button key={sub.id} onClick={() => handleSubClick(cat.id, sub.id)} className={`w-full text-left px-3 py-2 rounded-[10px] text-[13px] transition-all ${isActive(cat.id, sub.id) ? "bg-[#0071e3]/[0.06] text-[#0071e3] font-semibold" : "text-[#86868b] hover:bg-[#0071e3]/[0.03] hover:text-[#0071e3]"}`}>{sub.name}</button>))}</div></motion.div>)}</div>); })}</nav>
+      </div>
 
       <div className="p-4 shrink-0 space-y-1.5 border-t border-[#e8e8ed] mt-4">
-        {[{ path: "/", icon: Home, label: "首页" }, { path: "/submit", icon: Send, label: "提交工具" }].map((link) => (
+        {bottomLinks.map((link) => (
           <Link key={link.path} href={link.path} onClick={() => { if (link.path === "/") onSelectCategory(null, null); onMobileClose(); }} className={`flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-[14px] transition-all ${location === link.path ? "bg-[#0071e3]/[0.08] text-[#0071e3] font-semibold" : "text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3]"} ${collapsed ? "justify-center px-0" : ""}`}><link.icon className={`w-[18px] h-[18px] shrink-0 ${location === link.path ? "text-[#0071e3]" : "text-[#86868b]"}`} />{!collapsed && <span>{link.label}</span>}</Link>
         ))}
       </div>
@@ -46,10 +86,21 @@ export default function Sidebar({ categories, selectedCategoryId, onSelectCatego
     </div>
   );
 
-  // 注意这里的背景色改为了 transparent，让它跟随父级的自定义颜色
   return (
     <>
-      <aside className={`hidden lg:flex flex-col h-screen shrink-0 border-r border-[#e8e8ed] bg-transparent transition-all sticky top-0 ${collapsed ? "w-[80px]" : "w-[280px]"}`}>{sidebarContent}</aside>
+      <aside 
+        style={{ width: collapsed ? 80 : sidebarWidth }} 
+        className={`hidden lg:flex flex-col h-screen shrink-0 border-r border-[#e8e8ed] bg-transparent sticky top-0 z-40 relative ${isDragging ? "" : "transition-all duration-300 ease-[cubic-bezier(0.2,0.9,0.4,1.1)]"}`}
+      >
+        {sidebarContent}
+        {!collapsed && (
+          <div
+            className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-[#0071e3]/30 active:bg-[#0071e3]/50 z-50 transition-colors"
+            onMouseDown={(e) => { e.preventDefault(); setIsDragging(true); }}
+          />
+        )}
+      </aside>
+
       <AnimatePresence>{mobileOpen && <><motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.4 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black z-40 lg:hidden" onClick={onMobileClose} /><motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} className="fixed left-0 top-0 h-screen w-[280px] bg-[#f5f5f7] z-50 lg:hidden shadow-2xl"><button onClick={onMobileClose} className="absolute top-5 right-4 p-2 rounded-full text-[#86868b] hover:bg-[#e8e8ed]/80"><X className="w-5 h-5" /></button>{sidebarContent}</motion.aside></>}</AnimatePresence>
     </>
   );
