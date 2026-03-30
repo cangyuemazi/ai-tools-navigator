@@ -1,15 +1,35 @@
 import { useState, useEffect } from "react";
 import { PackageOpen } from "lucide-react";
 import ToolCard from "./ToolCard";
+import { Skeleton } from "@/components/ui/skeleton"; // 👇 引入骨架屏组件
 import type { Tool, Category } from "@/types";
 
 interface ToolGridProps {
   tools: Tool[];
   categories: Category[];
   selectedCategoryId: string | null;
+  isLoading?: boolean; // 👇 新增：告诉网格当前是否正在加载数据
 }
 
-export default function ToolGrid({ tools, categories, selectedCategoryId }: ToolGridProps) {
+// 👇 新增：骨架屏卡片组件，完全复刻了你真实卡片的尺寸和阴影
+function ToolCardSkeleton() {
+  return (
+    <div className="bg-white rounded-[20px] p-6 border border-[#e8e8ed] shadow-[0_8px_20px_rgba(0,0,0,0.04),0_2px_4px_rgba(0,0,0,0.02)]">
+      <div className="flex items-start gap-4">
+        <Skeleton className="w-[52px] h-[52px] rounded-[14px] shrink-0 bg-[#f5f5f7]" />
+        <div className="flex-1 min-w-0 pt-1">
+          <Skeleton className="h-[18px] w-3/4 mb-3 bg-[#f5f5f7]" />
+          <div className="flex gap-2">
+            <Skeleton className="h-5 w-12 rounded-[12px] bg-[#f5f5f7]" />
+            <Skeleton className="h-5 w-16 rounded-[12px] bg-[#f5f5f7]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false }: ToolGridProps) {
   const [cols, setCols] = useState(4);
 
   useEffect(() => {
@@ -32,6 +52,28 @@ export default function ToolGrid({ tools, categories, selectedCategoryId }: Tool
     }
     return "全部工具";
   };
+
+  // 👇 核心视觉优化：如果正在加载，显示极其优雅的骨架屏阵列
+  if (isLoading) {
+    return (
+      <div className="w-full">
+        <div className="mb-8">
+          <Skeleton className="h-8 w-48 mb-3 bg-[#f5f5f7]" />
+          <Skeleton className="h-5 w-32 bg-[#f5f5f7]" />
+        </div>
+        <div className="flex gap-6 items-start">
+          {Array.from({ length: cols }).map((_, colIndex) => (
+            <div key={colIndex} className="flex-1 flex flex-col gap-6 min-w-0">
+              {/* 每列放 4 个骨架卡片作为占位 */}
+              {Array.from({ length: 4 }).map((_, i) => (
+                <ToolCardSkeleton key={i} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const columnsData = Array.from({ length: cols }, () => [] as Tool[]);
   tools.forEach((tool, index) => {

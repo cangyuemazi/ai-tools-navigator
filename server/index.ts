@@ -5,6 +5,10 @@ import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
 import multer from "multer";
 import fs from "fs";
+// 👇 新增的安全防护库
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import xss from "xss";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,7 +19,17 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
+  // 👇 1. 开启基础安全头，隐藏 Express 指纹
+  app.use(helmet({ crossOriginResourcePolicy: false })); // 允许跨域加载图片
   app.use(express.json());
+
+  // 👇 2. 全局基础限流 (每个IP 15分钟内最多请求 300 次)
+  const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, 
+    max: 300, 
+    message: { error: "您的访问过于频繁，请稍后再试" }
+  });
+  app.use("/api/", globalLimiter);
 
   // 初始化图片上传目录
   const uploadDir = path.resolve(__dirname, "..", "client", "public", "uploads");
@@ -50,22 +64,32 @@ async function startServer() {
 
   app.get("/api/tools", async (req, res) => {
     try {
-      // 👈 核心排序逻辑：先按赞助排，再按“自定义排序权重 order”倒序，最后按浏览量
       const tools = await prisma.tool.findMany({ orderBy: [{ isSponsored: 'desc' }, { order: 'desc' }, { views: 'desc' }] });
       res.json(tools.map(tool => ({ ...tool, tags: tool.tags ? JSON.parse(tool.tags) : [] })));
     } catch (e) { res.status(500).json({ error: "获取工具失败" }); }
   });
 
-  // 公开图片上传接口 (客户提交表单专用)
   app.post("/api/upload-public", upload.single("file"), (req, res) => {
     if (!req.file) return res.status(400).json({ error: "未检测到文件" });
     res.json({ url: `/uploads/${req.file.filename}` });
   });
 
-  // 前台客户提交接口
-  app.post("/api/submit-tool", async (req, res) => {
+  // 👇 3. 针对“提交工具”接口开启严苛限流 (每个IP 1小时只能提交 5 次)
+  const submitLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    message: { error: "提交过于频繁，请休息一小时后再提交" }
+  });
+
+  app.post("/api/submit-tool", submitLimiter, async (req, res) => {
     try {
-      const { name, description, url, contactInfo, logo } = req.body;
+      // 👇 4. XSS 过滤：清洗用户提交的每一段文本，防止黑客注入恶意代码
+      const name = xss(req.body.name);
+      const description = xss(req.body.description);
+      const url = xss(req.body.url);
+      const contactInfo = xss(req.body.contactInfo || "");
+      const logo = req.body.logo;
+
       if (!name || !url) return res.status(400).json({ error: "工具名称和链接必填" });
       const pending = await prisma.pendingTool.create({
         data: { name, description, url, contactInfo, logo, status: "pending" }

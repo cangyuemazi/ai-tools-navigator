@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"    // 👈 必须把 sqlite 改成 mysql
   url      = env("DATABASE_URL")
 }
 
