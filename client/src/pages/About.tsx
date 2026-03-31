@@ -3,14 +3,11 @@
  * Introduces the team, vision, and contact information.
  */
 import { Target, Users, Zap, Mail, Globe } from "lucide-react";
-import Layout from "@/components/Layout";
-
 const ABOUT_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663305027998/HDfCavX5799Z5afQYedwzL/about-bg-8BTeZiLvbehD9zZefgNo7T.webp";
 
 export default function About() {
   return (
-    <Layout>
-      <div className="max-w-3xl mx-auto px-6 py-10">
+    <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">关于我们</h1>
         </div>
@@ -92,6 +89,5 @@ export default function About() {
           </div>
         </div>
       </div>
-    </Layout>
   );
 }

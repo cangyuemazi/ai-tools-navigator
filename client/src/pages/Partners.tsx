@@ -3,14 +3,11 @@
  * Business cooperation and advertising information.
  */
 import { Megaphone, BarChart3, Star, Mail, MessageSquare } from "lucide-react";
-import Layout from "@/components/Layout";
-
 const PARTNERS_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663305027998/HDfCavX5799Z5afQYedwzL/partners-bg-38coXdQr7ZvrTomhq4zwXn.webp";
 
 export default function Partners() {
   return (
-    <Layout>
-      <div className="max-w-3xl mx-auto px-6 py-10">
+    <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">商务合作</h1>
         </div>
@@ -119,6 +116,5 @@ export default function Partners() {
           </div>
         </div>
       </div>
-    </Layout>
   );
 }

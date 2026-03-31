@@ -13,6 +13,31 @@ import xss from "xss";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function loadLocalEnv() {
+  const envPath = path.resolve(__dirname, "..", ".env");
+  if (!fs.existsSync(envPath)) return;
+
+  for (const rawLine of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+
+    const separatorIndex = line.indexOf("=");
+    if (separatorIndex <= 0) continue;
+
+    const key = line.slice(0, separatorIndex).trim();
+    if (!key || process.env[key] !== undefined) continue;
+
+    let value = line.slice(separatorIndex + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+
+    process.env[key] = value;
+  }
+}
+
+loadLocalEnv();
+
 const prisma = new PrismaClient();
 
 async function startServer() {
@@ -83,16 +108,19 @@ async function startServer() {
 
   app.post("/api/submit-tool", submitLimiter, async (req, res) => {
     try {
-      // 👇 4. XSS 过滤：清洗用户提交的每一段文本，防止黑客注入恶意代码
       const name = xss(req.body.name);
       const description = xss(req.body.description);
       const url = xss(req.body.url);
       const contactInfo = xss(req.body.contactInfo || "");
-      const logo = req.body.logo;
+      const logo = xss(req.body.logo || "");
+      const categoryId = xss(req.body.categoryId || "");
+      const subCategoryId = xss(req.body.subCategoryId || "");
 
-      if (!name || !url) return res.status(400).json({ error: "工具名称和链接必填" });
+      if (!name || !description || !url || !logo || !categoryId) {
+        return res.status(400).json({ error: "Logo、工具名称、简介、官网链接和分类必填" });
+      }
       const pending = await prisma.pendingTool.create({
-        data: { name, description, url, contactInfo, logo, status: "pending" }
+        data: { name, description, url, contactInfo, logo, categoryId, subCategoryId: subCategoryId || null, status: "pending" }
       });
       res.json({ success: true, data: pending });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
@@ -104,6 +132,10 @@ async function startServer() {
   const ADMIN_PASS = process.env.ADMIN_PASSWORD || "admin123";
   const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.headers.authorization === `Bearer ${ADMIN_PASS}`) next(); else res.status(401).json({ error: "无权访问" });
+  };
+  const normalizeParentId = (value: unknown) => {
+    const stringValue = typeof value === "string" ? value.trim() : "";
+    return stringValue ? stringValue : null;
   };
 
   app.post("/api/admin/login", (req, res) => {
@@ -126,14 +158,29 @@ async function startServer() {
   });
 
   app.post("/api/admin/categories", requireAuth, async (req, res) => {
-    res.json(await prisma.category.create({ data: { name: req.body.name, parentId: req.body.parentId, icon: req.body.icon || "Box" } }));
+    const parentId = normalizeParentId(req.body.parentId);
+    const lastCategory = await prisma.category.findFirst({ where: { parentId }, orderBy: { order: "desc" } });
+    res.json(await prisma.category.create({ data: { name: req.body.name, parentId, icon: parentId ? null : (req.body.icon || "Box"), order: (lastCategory?.order || 0) + 1 } }));
   });
   app.put("/api/admin/categories/:id", requireAuth, async (req, res) => {
-    res.json(await prisma.category.update({ where: { id: req.params.id }, data: req.body }));
+    const parentId = normalizeParentId(req.body.parentId);
+    res.json(await prisma.category.update({ where: { id: req.params.id }, data: { name: req.body.name, parentId, icon: parentId ? null : (req.body.icon || "Box") } }));
   });
   app.delete("/api/admin/categories/:id", requireAuth, async (req, res) => {
     await prisma.category.deleteMany({ where: { parentId: req.params.id } });
     await prisma.category.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  });
+  app.post("/api/admin/categories/reorder", requireAuth, async (req, res) => {
+    const orderedIds = Array.isArray(req.body.orderedIds)
+      ? req.body.orderedIds.filter((id: unknown): id is string => typeof id === "string")
+      : [];
+    if (!orderedIds.length) return res.status(400).json({ error: "缺少排序数据" });
+
+    await prisma.$transaction(
+      orderedIds.map((id: string, index: number) => prisma.category.update({ where: { id }, data: { order: index + 1 } }))
+    );
+
     res.json({ success: true });
   });
 
@@ -154,12 +201,20 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.get("/api/admin/pending-tools", requireAuth, async (req, res) => {
-    res.json(await prisma.pendingTool.findMany({ orderBy: { createdAt: 'desc' } }));
+  app.get("/api/admin/pending-tools", requireAuth, async (_req, res) => {
+    try {
+      res.json(await prisma.pendingTool.findMany({ orderBy: { createdAt: 'desc' } }));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message || "获取待审核工具失败" });
+    }
   });
   app.delete("/api/admin/pending-tools/:id", requireAuth, async (req, res) => {
-    await prisma.pendingTool.delete({ where: { id: req.params.id } });
-    res.json({ success: true });
+    try {
+      await prisma.pendingTool.delete({ where: { id: req.params.id } });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message || "删除待审核工具失败" });
+    }
   });
 
   const staticPath = process.env.NODE_ENV === "production" ? path.resolve(__dirname, "public") : path.resolve(__dirname, "..", "dist", "public");

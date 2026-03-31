@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { PackageOpen } from "lucide-react";
 import ToolCard from "./ToolCard";
 import { Skeleton } from "@/components/ui/skeleton"; // 👇 引入骨架屏组件
@@ -29,7 +29,7 @@ function ToolCardSkeleton() {
   );
 }
 
-export default function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false }: ToolGridProps) {
+function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false }: ToolGridProps) {
   const [cols, setCols] = useState(4);
 
   useEffect(() => {
@@ -48,7 +48,9 @@ export default function ToolGrid({ tools, categories, selectedCategoryId, isLoad
     if (!selectedCategoryId) return "全部工具";
     for (const cat of categories) {
       if (cat.id === selectedCategoryId) return cat.name;
-      for (const sub of cat.children) return sub.name;
+      for (const sub of cat.children) {
+        if (sub.id === selectedCategoryId) return sub.name;
+      }
     }
     return "全部工具";
   };
@@ -107,3 +109,5 @@ export default function ToolGrid({ tools, categories, selectedCategoryId, isLoad
     </div>
   );
 }
+
+export default memo(ToolGrid);

@@ -4,7 +4,10 @@ import Layout from "@/components/Layout";
 export default function Privacy() {
   const [content, setContent] = useState("正在加载隐私政策...");
   useEffect(() => { 
-    fetch("/api/settings").then(r => r.json()).then(d => setContent(d.privacyText || "管理员尚未发布隐私政策。")); 
+    fetch("/api/settings")
+      .then(r => r.json())
+      .then(d => setContent(d.privacyText || "管理员尚未发布隐私政策。"))
+      .catch(() => setContent("加载隐私政策失败，请刷新重试。")); 
   }, []);
 
   return (

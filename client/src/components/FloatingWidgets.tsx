@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function FloatingWidgets() {
   const [showTop, setShowTop] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [qrError, setQrError] = useState(false);
 
   useEffect(() => {
     // 监听我们给主滚动区域加的 id
@@ -41,15 +42,18 @@ export default function FloatingWidgets() {
                 扫码添加客服微信
               </div>
               <div className="w-32 h-32 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center">
-                <img 
-                  src="/qrcode.png" 
-                  alt="客服微信" 
-                  className="w-full h-full object-cover" 
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = '<span class="text-xs text-gray-400 text-center">请在public目录<br/>放置qrcode.png</span>';
-                  }}
-                />
+                {qrError ? (
+                  <span className="text-xs text-gray-400 text-center">
+                    请在public目录<br />放置qrcode.png
+                  </span>
+                ) : (
+                  <img 
+                    src="/qrcode.png" 
+                    alt="客服微信" 
+                    className="w-full h-full object-cover" 
+                    onError={() => setQrError(true)}
+                  />
+                )}
               </div>
             </motion.div>
           )}

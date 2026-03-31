@@ -42,6 +42,8 @@ model PendingTool {
   url         String
   logo        String?  // 👈 新增：客户前台提交上来的 Logo 链接
   contactInfo String?  // 客户联系方式（微信/邮箱）
+  categoryId   String?
+  subCategoryId String?
   status      String   @default("pending") // pending, approved, rejected
   createdAt   DateTime @default(now())
 }
