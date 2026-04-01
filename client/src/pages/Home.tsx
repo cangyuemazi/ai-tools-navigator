@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
-import { Search, Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Box } from "lucide-react";
+import { Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Box } from "lucide-react";
 import ToolGrid from "@/components/ToolGrid";
 import ToolCard from "@/components/ToolCard";
 import type { Category, SubCategory, Tool } from "@/types";
@@ -12,14 +12,14 @@ type HomeMode = "home" | "all-tools";
 interface HomeProps {
   mode?: HomeMode;
   resetToken?: number;
+  searchQuery?: string;
   onSelectionChange?: (selectedCategoryId: string | null) => void;
   onActiveSectionChange?: (activeSectionId: string | null) => void;
   onRegisterScrollHandler?: (handler: ((categoryId: string, subCategoryId?: string) => void) | null) => void;
 }
 
-export default function Home({ mode = "home", resetToken = 0, onSelectionChange, onActiveSectionChange, onRegisterScrollHandler }: HomeProps) {
+export default function Home({ mode = "home", resetToken = 0, searchQuery = "", onSelectionChange, onActiveSectionChange, onRegisterScrollHandler }: HomeProps) {
   const [location, setLocation] = useLocation();
-  const [searchQuery, setSearchQuery] = useState("");
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
@@ -100,7 +100,6 @@ export default function Home({ mode = "home", resetToken = 0, onSelectionChange,
   }, [tools, categories]);
 
   const scrollToCategory = useCallback((categoryId: string, subCategoryId?: string) => {
-    setSearchQuery('');
     if (subCategoryId) {
       setActiveSubTabs(prev => ({ ...prev, [categoryId]: subCategoryId }));
     }
@@ -126,7 +125,6 @@ export default function Home({ mode = "home", resetToken = 0, onSelectionChange,
   }, [mode, activeSectionId, onActiveSectionChange]);
 
   useEffect(() => {
-    setSearchQuery("");
     setSelectedCategoryId(null);
     setActiveSectionId(null);
     setActiveSubTabs({});
@@ -168,19 +166,6 @@ export default function Home({ mode = "home", resetToken = 0, onSelectionChange,
 
   return (
     <div className="p-6 md:p-10 lg:p-12 max-w-[1600px] flex flex-col gap-8 mx-auto overflow-hidden">
-        
-        <div className="relative max-w-2xl w-full group">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-[20px] w-[20px] text-[#86868b] transition-colors group-focus-within:text-[#0071e3]" />
-          </div>
-          <input
-            type="text"
-            placeholder="搜索 AI 工具... (Ctrl+K 全局搜索)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-11 pr-4 py-3.5 border border-[#d2d2d7] rounded-[12px] leading-5 bg-[#ffffff] text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0071e3] focus:ring-[4px] focus:ring-[#0071e3]/10 transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.02)] text-[15px]"
-          />
-        </div>
 
         {/* 赞助商展位 */}
         {mode === "home" && sponsoredTools.length > 0 && !loading && !searchQuery && !selectedCategoryId && (
@@ -241,9 +226,9 @@ export default function Home({ mode = "home", resetToken = 0, onSelectionChange,
         {loading ? (
           <ToolGrid tools={[]} categories={categories} selectedCategoryId={null} isLoading={true} />
         ) : mode === "all-tools" ? (
-          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={null} isLoading={false} />
+          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={null} isLoading={false} isAllToolsView={true} />
         ) : searchQuery ? (
-          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={selectedCategoryId} isLoading={false} />
+          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={selectedCategoryId} isLoading={false} isAllToolsView={false} />
         ) : (
           categories.map(cat => {
             const catTools = toolsByCategory.get(cat.id);
@@ -296,7 +281,7 @@ export default function Home({ mode = "home", resetToken = 0, onSelectionChange,
                 {/* 工具卡片网格 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                   {displayTools.map((tool, idx) => (
-                    <ToolCard key={tool.id} tool={tool} index={idx} />
+                    <ToolCard key={tool.id} tool={tool} index={idx} isAllToolsView={!selectedCategoryId && !searchQuery} />
                   ))}
                 </div>
 

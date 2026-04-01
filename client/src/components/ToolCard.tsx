@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, memo } from "react";
+import { useState, useRef, useCallback, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ExternalLink, Eye, Sparkles } from "lucide-react";
 import type { Tool } from "@/types";
@@ -6,23 +6,43 @@ import type { Tool } from "@/types";
 interface ToolCardProps {
   tool: Tool;
   index: number;
+  isAllToolsView?: boolean;
 }
 
-function ToolCard({ tool, index }: ToolCardProps) {
+function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [logoError, setLogoError] = useState(false);
-  const [hoverMode, setHoverMode] = useState<"expand" | "tooltip">("expand");
+  const [isNearBottom, setIsNearBottom] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const checkPosition = useCallback(() => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    setHoverMode(rect.bottom > viewportHeight - 150 ? "tooltip" : "expand");
+  // Monitor scroll container to detect "near bottom"
+  useEffect(() => {
+    const container = document.getElementById('main-scroll-container');
+    if (!container) return;
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      setIsNearBottom(scrollHeight - scrollTop - clientHeight < 200);
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => container.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Mode A (expand): isAllToolsView AND not near bottom AND card not near viewport bottom
+  // Mode B (tooltip): everything else
+  const getHoverMode = useCallback((): "expand" | "tooltip" => {
+    if (!isAllToolsView) return "tooltip";
+    if (isNearBottom) return "tooltip";
+    if (!cardRef.current) return "expand";
+    const rect = cardRef.current.getBoundingClientRect();
+    if (rect.bottom > window.innerHeight - 150) return "tooltip";
+    return "expand";
+  }, [isAllToolsView, isNearBottom]);
+
+  const [hoverMode, setHoverMode] = useState<"expand" | "tooltip">("expand");
+
   const handleMouseEnter = () => {
-    checkPosition();
+    setHoverMode(getHoverMode());
     setIsHovered(true);
   };
 

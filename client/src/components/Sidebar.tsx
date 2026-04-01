@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Home, Send, Info, Handshake, PanelLeftClose, PanelLeftOpen, X, Box, LayoutGrid } from "lucide-react";
+import { ChevronRight, Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, PanelLeftClose, PanelLeftOpen, X, Box, LayoutGrid } from "lucide-react";
 import type { Category, SubCategory } from "@/types";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = { Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Box };
@@ -77,16 +77,12 @@ export default function Sidebar({ categories, selectedCategoryId, onSelectCatego
   const isActive = (cId: string, sId?: string) => { if (activeSectionId && !selectedCategoryId && location === "/") return sId ? false : cId === activeSectionId; return sId ? selectedCategoryId === sId : selectedCategoryId === cId; };
 
   const bottomLinks = [
-    { path: "/", icon: Home, label: "首页", action: onNavigateHome },
     { path: "/all-tools", icon: LayoutGrid, label: "全部工具", action: onNavigateAllTools },
-    { path: "/submit", icon: Send, label: "提交工具" },
-    { path: "/about", icon: Info, label: "关于我们" },
-    { path: "/partners", icon: Handshake, label: "商务合作" },
   ];
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      <Link href="/" className="flex items-center h-[72px] px-6 shrink-0 hover:opacity-80 no-underline" onClick={(e) => { e.preventDefault(); onNavigateHome?.(); onSelectCategory(null, null); if (mobileOpen) onMobileClose(); }}>
+      <Link href="/" className="flex items-center h-[72px] px-6 shrink-0 hover:opacity-80 no-underline" onClick={(e) => { e.preventDefault(); window.location.href = '/'; }}>
         {collapsed ? (
           <div className="w-full flex justify-center">{siteSettings.logo ? <img src={siteSettings.logo} className="w-10 h-10 rounded-[12px] object-contain shadow-sm" /> : <div className="w-10 h-10 rounded-[12px] bg-[#0071e3] flex items-center justify-center"><span className="text-white font-semibold text-sm">AI</span></div>}</div>
         ) : (

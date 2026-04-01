@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { Menu, Search } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Link, useLocation } from "wouter";
+import { Menu, Search, Home, Send, Info, Handshake } from "lucide-react";
 import Sidebar from "./Sidebar";
 import FloatingWidgets from "./FloatingWidgets";
 import CommandPalette from "./CommandPalette";
@@ -7,12 +8,14 @@ import type { Category } from "@/types";
 // 👇 引入强大的 SEO 管理组件
 import { Helmet, HelmetProvider } from "react-helmet-async";
 
-interface LayoutProps { children: React.ReactNode; selectedCategoryId?: string | null; onSelectCategory?: (c: string | null, s?: string | null) => void; showMobileHeader?: boolean; activeSectionId?: string | null; onScrollToCategory?: (categoryId: string, subCategoryId?: string) => void; onNavigateHome?: () => void; onNavigateAllTools?: () => void; }
+interface LayoutProps { children: React.ReactNode; selectedCategoryId?: string | null; onSelectCategory?: (c: string | null, s?: string | null) => void; showMobileHeader?: boolean; activeSectionId?: string | null; onScrollToCategory?: (categoryId: string, subCategoryId?: string) => void; onNavigateHome?: () => void; onNavigateAllTools?: () => void; searchQuery?: string; onSearchChange?: (query: string) => void; }
 
-export default function Layout({ children, selectedCategoryId = null, onSelectCategory, showMobileHeader = true, activeSectionId = null, onScrollToCategory, onNavigateHome, onNavigateAllTools }: LayoutProps) {
+export default function Layout({ children, selectedCategoryId = null, onSelectCategory, showMobileHeader = true, activeSectionId = null, onScrollToCategory, onNavigateHome, onNavigateAllTools, searchQuery = "", onSearchChange }: LayoutProps) {
+  const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
   const [siteSettings, setSiteSettings] = useState({ name: "智能零零AI工具", logo: "", favicon: "", backgroundColor: "#f5f5f7", companyIntro: "", icp: "", email: "" });
 
   useEffect(() => {
@@ -23,6 +26,12 @@ export default function Layout({ children, selectedCategoryId = null, onSelectCa
   }, []);
 
   const handleSelectCategory = (c: string | null, s?: string | null) => { if (onSelectCategory) onSelectCategory(c, s); setMobileOpen(false); };
+
+  // Task 3: Scroll to top on route or category change
+  useEffect(() => {
+    const el = mainScrollRef.current;
+    if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location, selectedCategoryId]);
 
   // 根据当前选择的分类，动态生成网页标题
   const currentCategoryName = categories.find(c => c.id === selectedCategoryId)?.name;
@@ -42,8 +51,31 @@ export default function Layout({ children, selectedCategoryId = null, onSelectCa
 
       <div className="flex h-screen text-[#1d1d1f] font-sans selection:bg-[#0071e3]/20" style={{ backgroundColor: siteSettings.backgroundColor || "#f5f5f7" }}>
         <Sidebar categories={categories} selectedCategoryId={selectedCategoryId} onSelectCategory={handleSelectCategory} collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} activeSectionId={activeSectionId} onScrollToCategory={onScrollToCategory} onNavigateHome={onNavigateHome} onNavigateAllTools={onNavigateAllTools} />
-        <main id="main-scroll-container" className="flex-1 overflow-y-auto scroll-smooth relative flex flex-col">
+        <main ref={mainScrollRef} id="main-scroll-container" className="flex-1 overflow-y-auto scroll-smooth relative flex flex-col">
           
+          {/* Desktop sticky top bar */}
+          <div className="hidden lg:flex sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-[#e8e8ed]/60 px-6 py-2.5 items-center gap-4">
+            <div className="flex items-center gap-1">
+              <button onClick={() => { window.location.href = '/'; }} className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3]`}><Home className="w-4 h-4" /><span>首页</span></button>
+              <Link href="/about" className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3] no-underline`}><Info className="w-4 h-4" /><span>关于我们</span></Link>
+              <Link href="/submit" className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3] no-underline`}><Send className="w-4 h-4" /><span>提交收录</span></Link>
+              <Link href="/partners" className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3] no-underline`}><Handshake className="w-4 h-4" /><span>商务合作</span></Link>
+            </div>
+            <div className="flex-1" />
+            <div className="relative max-w-xs w-full group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-[#86868b] transition-colors group-focus-within:text-[#0071e3]" />
+              </div>
+              <input
+                type="text"
+                placeholder="搜索 AI 工具..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+                className="block w-full pl-9 pr-3 py-2 border border-[#d2d2d7] rounded-[10px] leading-5 bg-white/90 text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0071e3] focus:ring-[3px] focus:ring-[#0071e3]/10 transition-all duration-300 text-[13px]"
+              />
+            </div>
+          </div>
+
           {showMobileHeader && (
             <div className="lg:hidden sticky top-0 z-30 bg-white/70 backdrop-blur-[20px] border-b border-[#e8e8ed] px-4 py-3 flex items-center gap-3">
               <button onClick={() => setMobileOpen(true)} className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-[12px] hover:bg-[#0071e3]/[0.05]"><Menu className="w-5 h-5" /></button>

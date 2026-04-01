@@ -15,6 +15,7 @@ export default function AppShell() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [homeResetToken, setHomeResetToken] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const scrollHandlerRef = useRef<ScrollToCategoryHandler | null>(null);
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function AppShell() {
         <Home
           mode="home"
           resetToken={homeResetToken}
+          searchQuery={searchQuery}
           onSelectionChange={setSelectedCategoryId}
           onActiveSectionChange={setActiveSectionId}
           onRegisterScrollHandler={handleRegisterScrollHandler}
@@ -71,6 +73,7 @@ export default function AppShell() {
         <Home
           mode="all-tools"
           resetToken={homeResetToken}
+          searchQuery={searchQuery}
           onSelectionChange={setSelectedCategoryId}
           onActiveSectionChange={setActiveSectionId}
           onRegisterScrollHandler={handleRegisterScrollHandler}
@@ -99,6 +102,8 @@ export default function AppShell() {
       onScrollToCategory={path === "/" ? handleScrollToCategory : undefined}
       onNavigateHome={handleNavigateHome}
       onNavigateAllTools={handleNavigateAllTools}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
     >
       {content}
     </Layout>

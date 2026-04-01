@@ -8,7 +8,8 @@ interface ToolGridProps {
   tools: Tool[];
   categories: Category[];
   selectedCategoryId: string | null;
-  isLoading?: boolean; // 👇 新增：告诉网格当前是否正在加载数据
+  isLoading?: boolean;
+  isAllToolsView?: boolean;
 }
 
 // 👇 新增：骨架屏卡片组件，完全复刻了你真实卡片的尺寸和阴影
@@ -29,7 +30,7 @@ function ToolCardSkeleton() {
   );
 }
 
-function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false }: ToolGridProps) {
+function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, isAllToolsView = false }: ToolGridProps) {
   const [cols, setCols] = useState(4);
 
   useEffect(() => {
@@ -94,7 +95,7 @@ function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false }: 
           {columnsData.map((col, colIndex) => (
             <div key={colIndex} className="flex-1 flex flex-col gap-6 min-w-0">
               {col.map((tool, index) => (
-                <ToolCard key={tool.id} tool={tool} index={index} />
+                <ToolCard key={tool.id} tool={tool} index={index} isAllToolsView={isAllToolsView} />
               ))}
             </div>
           ))}
