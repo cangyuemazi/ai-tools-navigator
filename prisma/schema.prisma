@@ -23,6 +23,10 @@ model Tool {
   order         Int       @default(0) // 👈 新增：工具的自定义排序权重 (越高越排在前面)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([categoryId])
+  @@index([subCategoryId])
+  @@index([isSponsored, order, views])
 }
 
 // 分类表
@@ -32,6 +36,8 @@ model Category {
   parentId  String?  
   icon      String?  
   order     Int      @default(0)
+
+  @@index([parentId])
 }
 
 // 待审核的工具提交表（客户自助提交）

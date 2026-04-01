@@ -5,10 +5,11 @@ import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
 import multer from "multer";
 import fs from "fs";
-// 👇 新增的安全防护库
+import crypto from "crypto";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import xss from "xss";
+import jwt from "jsonwebtoken";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,7 +65,7 @@ async function startServer() {
   // Multer 配置
   const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, `img_${Date.now()}${path.extname(file.originalname)}`)
+    filename: (req, file, cb) => cb(null, `img_${crypto.randomUUID()}${path.extname(file.originalname)}`)
   });
   const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 限制 5MB
 
@@ -89,13 +90,39 @@ async function startServer() {
 
   app.get("/api/tools", async (req, res) => {
     try {
-      const tools = await prisma.tool.findMany({ orderBy: [{ isSponsored: 'desc' }, { order: 'desc' }, { views: 'desc' }] });
-      res.json(tools.map(tool => ({ ...tool, tags: tool.tags ? JSON.parse(tool.tags) : [] })));
+      const page = parseInt(req.query.page as string) || 0;
+      const limit = parseInt(req.query.limit as string) || 0;
+      const orderBy = [{ isSponsored: 'desc' as const }, { order: 'desc' as const }, { views: 'desc' as const }];
+
+      if (page > 0 && limit > 0) {
+        const safeLimit = Math.min(limit, 200);
+        const [tools, total] = await Promise.all([
+          prisma.tool.findMany({ orderBy, skip: (page - 1) * safeLimit, take: safeLimit }),
+          prisma.tool.count()
+        ]);
+        res.json({ tools: tools.map(tool => ({ ...tool, tags: tool.tags ? JSON.parse(tool.tags) : [] })), total, page, limit: safeLimit });
+      } else {
+        const tools = await prisma.tool.findMany({ orderBy });
+        res.json(tools.map(tool => ({ ...tool, tags: tool.tags ? JSON.parse(tool.tags) : [] })));
+      }
     } catch (e) { res.status(500).json({ error: "获取工具失败" }); }
   });
 
-  app.post("/api/upload-public", upload.single("file"), (req, res) => {
+  // 允许上传的图片 MIME 白名单
+  const ALLOWED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon"]);
+
+  const uploadPublicLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    message: { error: "上传过于频繁，请稍后再试" }
+  });
+
+  app.post("/api/upload-public", uploadPublicLimiter, upload.single("file"), (req, res) => {
     if (!req.file) return res.status(400).json({ error: "未检测到文件" });
+    if (!ALLOWED_IMAGE_MIMES.has(req.file.mimetype)) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(400).json({ error: "仅允许上传图片文件 (jpg/png/gif/webp/svg/ico)" });
+    }
     res.json({ url: `/uploads/${req.file.filename}` });
   });
 
@@ -123,15 +150,33 @@ async function startServer() {
         data: { name, description, url, contactInfo, logo, categoryId, subCategoryId: subCategoryId || null, status: "pending" }
       });
       res.json({ success: true, data: pending });
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
+    } catch { res.status(500).json({ error: "提交工具失败，请稍后重试" }); }
   });
 
   // ==========================================
   // 2. 管理后台专用接口 (带鉴权)
   // ==========================================
   const ADMIN_PASS = process.env.ADMIN_PASSWORD || "admin123";
+  const JWT_SECRET = process.env.JWT_SECRET || crypto.randomUUID() + crypto.randomUUID();
+  const JWT_EXPIRES_IN = "24h";
+
+  if (ADMIN_PASS === "admin123") {
+    console.warn("⚠️  警告：正在使用默认管理员密码，请在 .env 中设置 ADMIN_PASSWORD 以确保安全");
+  }
+  if (!process.env.JWT_SECRET) {
+    console.warn("⚠️  警告：未配置 JWT_SECRET，已使用随机值（重启后所有已登录 token 将失效）。建议在 .env 中设置 JWT_SECRET");
+  }
+
   const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (req.headers.authorization === `Bearer ${ADMIN_PASS}`) next(); else res.status(401).json({ error: "无权访问" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "无权访问" });
+    const token = authHeader.slice(7);
+    try {
+      jwt.verify(token, JWT_SECRET);
+      next();
+    } catch {
+      return res.status(401).json({ error: "登录已过期，请重新登录" });
+    }
   };
   const normalizeParentId = (value: unknown) => {
     const stringValue = typeof value === "string" ? value.trim() : "";
@@ -139,37 +184,67 @@ async function startServer() {
   };
 
   app.post("/api/admin/login", (req, res) => {
-    if (req.body.password === ADMIN_PASS) res.json({ success: true }); else res.status(401).json({ error: "密码错误" });
+    if (req.body.password === ADMIN_PASS) {
+      const token = jwt.sign({ role: "admin" }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+      res.json({ success: true, token });
+    } else {
+      res.status(401).json({ error: "密码错误" });
+    }
   });
 
   app.post("/api/admin/upload", requireAuth, upload.single("file"), (req, res) => {
     if (!req.file) return res.status(400).json({ error: "未检测到文件" });
+    if (!ALLOWED_IMAGE_MIMES.has(req.file.mimetype)) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(400).json({ error: "仅允许上传图片文件" });
+    }
     res.json({ url: `/uploads/${req.file.filename}` });
   });
 
   app.put("/api/admin/settings", requireAuth, async (req, res) => {
-    // 👇 接收前端传来的 termsText 和 privacyText
-    const { name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText } = req.body;
-    res.json(await prisma.siteSetting.upsert({ 
-      where: { id: "default" }, 
-      update: { name, logo, favicon, titleFontSize: Number(titleFontSize), backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText }, 
-      create: { id: "default", name, logo, favicon, titleFontSize: Number(titleFontSize), backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText } 
-    }));
+    try {
+      const name = xss(req.body.name || "");
+      const logo = req.body.logo || "";
+      const favicon = req.body.favicon || "";
+      const titleFontSize = Number(req.body.titleFontSize) || 17;
+      const backgroundColor = xss(req.body.backgroundColor || "#f5f5f7");
+      const companyIntro = xss(req.body.companyIntro || "");
+      const icp = xss(req.body.icp || "");
+      const email = xss(req.body.email || "");
+      const customerServiceQrCode = req.body.customerServiceQrCode || "";
+      const termsText = req.body.termsText || "";
+      const privacyText = req.body.privacyText || "";
+      res.json(await prisma.siteSetting.upsert({ 
+        where: { id: "default" }, 
+        update: { name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText }, 
+        create: { id: "default", name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText } 
+      }));
+    } catch { res.status(500).json({ error: "保存设置失败" }); }
   });
 
   app.post("/api/admin/categories", requireAuth, async (req, res) => {
-    const parentId = normalizeParentId(req.body.parentId);
-    const lastCategory = await prisma.category.findFirst({ where: { parentId }, orderBy: { order: "desc" } });
-    res.json(await prisma.category.create({ data: { name: req.body.name, parentId, icon: parentId ? null : (req.body.icon || "Box"), order: (lastCategory?.order || 0) + 1 } }));
+    try {
+      const parentId = normalizeParentId(req.body.parentId);
+      const name = xss(req.body.name || "");
+      const icon = parentId ? null : xss(req.body.icon || "Box");
+      const lastCategory = await prisma.category.findFirst({ where: { parentId }, orderBy: { order: "desc" } });
+      res.json(await prisma.category.create({ data: { name, parentId, icon, order: (lastCategory?.order || 0) + 1 } }));
+    } catch { res.status(500).json({ error: "创建分类失败" }); }
   });
   app.put("/api/admin/categories/:id", requireAuth, async (req, res) => {
-    const parentId = normalizeParentId(req.body.parentId);
-    res.json(await prisma.category.update({ where: { id: req.params.id }, data: { name: req.body.name, parentId, icon: parentId ? null : (req.body.icon || "Box") } }));
+    try {
+      const parentId = normalizeParentId(req.body.parentId);
+      const name = xss(req.body.name || "");
+      const icon = parentId ? null : xss(req.body.icon || "Box");
+      res.json(await prisma.category.update({ where: { id: req.params.id }, data: { name, parentId, icon } }));
+    } catch { res.status(500).json({ error: "更新分类失败" }); }
   });
   app.delete("/api/admin/categories/:id", requireAuth, async (req, res) => {
-    await prisma.category.deleteMany({ where: { parentId: req.params.id } });
-    await prisma.category.delete({ where: { id: req.params.id } });
-    res.json({ success: true });
+    try {
+      await prisma.category.deleteMany({ where: { parentId: req.params.id } });
+      await prisma.category.delete({ where: { id: req.params.id } });
+      res.json({ success: true });
+    } catch { res.status(500).json({ error: "删除分类失败" }); }
   });
   app.post("/api/admin/categories/reorder", requireAuth, async (req, res) => {
     const orderedIds = Array.isArray(req.body.orderedIds)
@@ -185,35 +260,73 @@ async function startServer() {
   });
 
   app.get("/api/admin/tools", requireAuth, async (req, res) => {
-    const tools = await prisma.tool.findMany({ orderBy: { createdAt: 'desc' } });
-    res.json(tools.map(t => ({ ...t, tags: t.tags ? JSON.parse(t.tags) : [] })));
+    try {
+      const tools = await prisma.tool.findMany({ orderBy: { createdAt: 'desc' } });
+      res.json(tools.map(t => ({ ...t, tags: t.tags ? JSON.parse(t.tags) : [] })));
+    } catch { res.status(500).json({ error: "获取工具列表失败" }); }
   });
   app.post("/api/admin/tools", requireAuth, async (req, res) => {
-    const { name, description, url, logo, categoryId, subCategoryId, tags, isSponsored, sponsorExpiry, order } = req.body;
-    res.json(await prisma.tool.create({ data: { name, description, url, logo, categoryId, subCategoryId: subCategoryId || null, tags: JSON.stringify(tags || []), isSponsored: Boolean(isSponsored), sponsorExpiry: sponsorExpiry ? new Date(sponsorExpiry) : null, order: Number(order) || 0 } }));
+    try {
+      const data = {
+        name: xss(req.body.name || ""),
+        description: xss(req.body.description || ""),
+        url: xss(req.body.url || ""),
+        logo: req.body.logo || "",
+        categoryId: req.body.categoryId,
+        subCategoryId: req.body.subCategoryId || null,
+        tags: JSON.stringify(req.body.tags || []),
+        isSponsored: Boolean(req.body.isSponsored),
+        sponsorExpiry: req.body.sponsorExpiry ? new Date(req.body.sponsorExpiry) : null,
+        order: Number(req.body.order) || 0
+      };
+      res.json(await prisma.tool.create({ data }));
+    } catch { res.status(500).json({ error: "创建工具失败" }); }
   });
   app.put("/api/admin/tools/:id", requireAuth, async (req, res) => {
-    const { name, description, url, logo, categoryId, subCategoryId, tags, isSponsored, sponsorExpiry, order } = req.body;
-    res.json(await prisma.tool.update({ where: { id: req.params.id }, data: { name, description, url, logo, categoryId, subCategoryId: subCategoryId || null, tags: JSON.stringify(tags || []), isSponsored: Boolean(isSponsored), sponsorExpiry: sponsorExpiry ? new Date(sponsorExpiry) : null, order: Number(order) || 0 } }));
+    try {
+      const data = {
+        name: xss(req.body.name || ""),
+        description: xss(req.body.description || ""),
+        url: xss(req.body.url || ""),
+        logo: req.body.logo || "",
+        categoryId: req.body.categoryId,
+        subCategoryId: req.body.subCategoryId || null,
+        tags: JSON.stringify(req.body.tags || []),
+        isSponsored: Boolean(req.body.isSponsored),
+        sponsorExpiry: req.body.sponsorExpiry ? new Date(req.body.sponsorExpiry) : null,
+        order: Number(req.body.order) || 0
+      };
+      res.json(await prisma.tool.update({ where: { id: req.params.id }, data }));
+    } catch { res.status(500).json({ error: "更新工具失败" }); }
   });
   app.delete("/api/admin/tools/:id", requireAuth, async (req, res) => {
-    await prisma.tool.delete({ where: { id: req.params.id } });
-    res.json({ success: true });
+    try {
+      await prisma.tool.delete({ where: { id: req.params.id } });
+      res.json({ success: true });
+    } catch { res.status(500).json({ error: "删除工具失败" }); }
   });
 
   app.get("/api/admin/pending-tools", requireAuth, async (_req, res) => {
     try {
       res.json(await prisma.pendingTool.findMany({ orderBy: { createdAt: 'desc' } }));
-    } catch (e: any) {
-      res.status(500).json({ error: e.message || "获取待审核工具失败" });
+    } catch {
+      res.status(500).json({ error: "获取待审核工具失败" });
     }
   });
   app.delete("/api/admin/pending-tools/:id", requireAuth, async (req, res) => {
     try {
       await prisma.pendingTool.delete({ where: { id: req.params.id } });
       res.json({ success: true });
-    } catch (e: any) {
-      res.status(500).json({ error: e.message || "删除待审核工具失败" });
+    } catch {
+      res.status(500).json({ error: "删除待审核工具失败" });
+    }
+  });
+
+  // 全局错误兜底中间件 — 捕获所有未处理的异步/同步异常
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error("Unhandled error:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
   });
 
