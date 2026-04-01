@@ -367,7 +367,7 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
                 )}
 
                 {/* 工具卡片网格 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                   {displayTools.map((tool, idx) => (
                     <ToolCard key={tool.id} tool={tool} index={idx} isAllToolsView={isAllToolsView} />
                   ))}

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ExternalLink, Eye, Sparkles } from "lucide-react";
+import { ExternalLink, Sparkles } from "lucide-react";
 import type { Tool } from "@/types";
 
 interface ToolCardProps {
@@ -47,7 +47,7 @@ function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
       >
         <div
           className={`
-            bg-[#ffffff] rounded-[20px] p-6 transition-all duration-300 ease-[cubic-bezier(0.2,0.9,0.4,1.1)]
+            bg-[#ffffff] rounded-[20px] p-4 transition-all duration-300 ease-[cubic-bezier(0.2,0.9,0.4,1.1)]
             border active:scale-[0.98] relative
             ${tool.isSponsored ? "border-[#0071e3]/30" : "border-[#e8e8ed]"}
             ${isHovered
@@ -78,21 +78,15 @@ function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-start gap-2 pr-6 mb-2">
-                <h3 className={`text-[16px] font-semibold line-clamp-2 tracking-tight leading-[1.3] transition-colors duration-300 ${isTooltipMode ? "text-[#0071e3]" : "text-[#1d1d1f]"}`}>
+              <div className="relative mb-2">
+                <h3 className={`text-[16px] font-semibold truncate tracking-tight leading-[1.3] transition-colors duration-300 ${isTooltipMode ? "text-[#0071e3]" : "text-[#1d1d1f]"}`}>
                   {tool.name}
                 </h3>
-                <ExternalLink className={`w-4 h-4 mt-0.5 shrink-0 transition-all duration-300 ${isHovered ? "opacity-100 text-[#0071e3]" : "opacity-0 text-[#86868b]"}`} />
+                <ExternalLink className={`absolute right-0 top-0.5 w-4 h-4 transition-all duration-300 ${isHovered ? "opacity-100 text-[#0071e3]" : "opacity-0 text-[#86868b]"}`} />
               </div>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-[12px] text-[#6e6e73] leading-5 truncate">
-                  {getDescriptionSnippet(tool.description)}
-                </p>
-                <span className="flex items-center gap-1 text-[12px] font-medium text-[#86868b] ml-auto">
-                  <Eye className="w-3.5 h-3.5" />
-                  {tool.views >= 10000 ? `${(tool.views / 10000).toFixed(1)}w` : tool.views.toLocaleString()}
-                </span>
-              </div>
+              <p className="text-[12px] text-[#6e6e73] leading-5 truncate">
+                {tool.description}
+              </p>
             </div>
           </div>
 

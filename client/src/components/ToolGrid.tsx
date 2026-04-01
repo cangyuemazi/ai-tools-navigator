@@ -15,7 +15,7 @@ interface ToolGridProps {
 // 👇 新增：骨架屏卡片组件，完全复刻了你真实卡片的尺寸和阴影
 function ToolCardSkeleton() {
   return (
-    <div className="bg-white rounded-[20px] p-6 border border-[#e8e8ed] shadow-[0_8px_20px_rgba(0,0,0,0.04),0_2px_4px_rgba(0,0,0,0.02)]">
+    <div className="bg-white rounded-[20px] p-4 border border-[#e8e8ed] shadow-[0_8px_20px_rgba(0,0,0,0.04),0_2px_4px_rgba(0,0,0,0.02)]">
       <div className="flex items-start gap-4">
         <Skeleton className="w-[52px] h-[52px] rounded-[14px] shrink-0 bg-[#f5f5f7]" />
         <div className="flex-1 min-w-0 pt-1">
@@ -31,12 +31,13 @@ function ToolCardSkeleton() {
 }
 
 function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, isAllToolsView = false }: ToolGridProps) {
-  const [cols, setCols] = useState(4);
+  const [cols, setCols] = useState(5);
 
   useEffect(() => {
     const updateCols = () => {
-      if (window.innerWidth >= 1536) setCols(4);
-      else if (window.innerWidth >= 1280) setCols(3);
+      if (window.innerWidth >= 1536) setCols(5);
+      else if (window.innerWidth >= 1280) setCols(4);
+      else if (window.innerWidth >= 1024) setCols(3);
       else if (window.innerWidth >= 768) setCols(2);
       else setCols(1);
     };
