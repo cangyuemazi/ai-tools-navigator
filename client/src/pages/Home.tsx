@@ -325,7 +325,7 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
             const displayTools = activeTab ? catTools.filter(t => t.subCategoryId === activeTab) : catTools;
 
             return (
-              <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-6">
+              <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-20">
                 {/* 分类标题 + 图标 */}
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-9 h-9 rounded-[10px] bg-[#0071e3]/[0.08] flex items-center justify-center">
