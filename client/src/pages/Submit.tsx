@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { CheckCircle2, FolderTree, Link2, Loader2, UploadCloud } from "lucide-react";
+import { CheckCircle2, FolderTree, Loader2 } from "lucide-react";
+
+import EditableLogoField from "@/components/EditableLogoField";
 import type { Category } from "@/types";
 
 export default function Submit() {
@@ -16,7 +18,7 @@ export default function Submit() {
   });
   const [categories, setCategories] = useState<Category[]>([]);
   const [agreed, setAgreed] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [logoDirty, setLogoDirty] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -41,38 +43,17 @@ export default function Submit() {
     [categories, formData.categoryId]
   );
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    const form = new FormData();
-    form.append("file", file);
-
-    try {
-      const response = await fetch("/api/upload-public", {
-        method: "POST",
-        body: form,
-      });
-      const data = await response.json();
-      if (data.url) {
-        setFormData((current) => ({ ...current, logo: data.url }));
-      } else {
-        setError("图片上传失败，请重试");
-      }
-    } catch {
-      setError("网络错误，上传失败");
-    }
-
-    setUploading(false);
-  };
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
 
+    if (logoDirty) {
+      setError("Logo 已修改但尚未保存，请先点击“保存 Logo”");
+      return;
+    }
+
     if (!formData.logo || !formData.name || !formData.description || !formData.url || !formData.categoryId) {
-      setError("请完整填写 Logo、工具名称、简介、官网链接和分类");
+      setError("请完整填写并保存 Logo、工具名称、简介、官网链接和分类");
       return;
     }
 
@@ -133,43 +114,21 @@ export default function Submit() {
 
       <form onSubmit={handleSubmit} className="bg-white p-8 sm:p-10 rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-[#e8e8ed]">
         <div className="space-y-6">
-          <div className="grid lg:grid-cols-[140px_minmax(0,1fr)] gap-6 items-start">
-            <div className="flex flex-col items-center">
-              <div className="w-28 h-28 bg-[#f5f5f7] border border-[#d2d2d7] border-dashed rounded-[24px] flex flex-col items-center justify-center mb-3 overflow-hidden relative group">
-                {formData.logo ? (
-                  <img src={formData.logo} alt="Logo" className="w-full h-full object-contain p-2 bg-white" />
-                ) : (
-                  <UploadCloud className="w-8 h-8 text-[#86868b] mb-2 group-hover:text-[#0071e3] transition-colors" />
-                )}
-                {uploading && (
-                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 text-[#0071e3] animate-spin" />
-                  </div>
-                )}
-              </div>
-              <label className="text-[#0071e3] text-[15px] font-medium cursor-pointer hover:underline">
-                上传 Logo
-                <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} disabled={uploading} />
-              </label>
-            </div>
+          <div className="grid lg:grid-cols-[180px_minmax(0,1fr)] gap-6 items-start">
+            <EditableLogoField
+              value={formData.logo}
+              onChange={(logo) => {
+                setFormData((current) => ({ ...current, logo }));
+                setError("");
+              }}
+              uploadUrl="/api/upload-public"
+              frameClassName="rounded-[24px]"
+              helperTitle="Logo 仅支持本地上传"
+              helperText="选择本地图片后，直接在左侧现有圆角 Logo 框内拖动和缩放，点击“保存 Logo”后，后台审核收录和前端 AI 卡片都会使用这个编辑后的成品图。"
+              onDirtyChange={setLogoDirty}
+            />
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-[14px] font-medium text-[#1d1d1f] mb-2">
-                  Logo 图片链接 <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#86868b]" />
-                  <input
-                    type="url"
-                    value={formData.logo}
-                    onChange={(event) => setFormData({ ...formData, logo: event.target.value })}
-                    placeholder="https://example.com/logo.png 或先上传图片"
-                    className="w-full pl-11 pr-4 py-3 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[12px] outline-none focus:border-[#0071e3] focus:ring-[3px] focus:ring-[#0071e3]/10 transition-all text-[15px]"
-                  />
-                </div>
-              </div>
-
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[14px] font-medium text-[#1d1d1f] mb-2">

@@ -156,7 +156,7 @@ export default function CommandPalette() {
                       <img
                         src={tool.logo || undefined}
                         alt=""
-                        className="w-8 h-8 rounded-[10px] object-contain bg-[#f5f5f7] p-1 shrink-0"
+                        className="w-8 h-8 rounded-[10px] object-contain bg-[#f5f5f7] shrink-0"
                         onError={e => {
                           (e.target as HTMLImageElement).style.display = "none";
                         }}

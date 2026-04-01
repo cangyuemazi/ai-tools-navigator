@@ -59,6 +59,7 @@ model SiteSetting {
   companyIntro    String? // 👈 新增：公司简介
   icp             String? // 👈 新增：备案号
   email           String? // 👈 新增：联系邮箱
+  customerServiceQrCode String? // 前端悬浮客服二维码
   // 👇 新增的两个协议长文本字段
   termsText       String? @db.LongText
   privacyText     String? @db.LongText

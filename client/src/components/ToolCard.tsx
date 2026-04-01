@@ -9,6 +9,11 @@ interface ToolCardProps {
   isAllToolsView?: boolean;
 }
 
+function getDescriptionSnippet(description: string, maxLength = 8) {
+  if (description.length <= maxLength) return description;
+  return `${description.slice(0, maxLength)}...`;
+}
+
 function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [logoError, setLogoError] = useState(false);
@@ -68,7 +73,7 @@ function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
               {logoError ? (
                 <span className="text-[20px] font-semibold text-[#86868b]">{tool.name.charAt(0)}</span>
               ) : (
-                <img src={tool.logo || undefined} alt={tool.name} className="w-8 h-8 object-contain" onError={() => setLogoError(true)} loading="lazy" />
+                <img src={tool.logo || undefined} alt={tool.name} className="w-full h-full object-contain" onError={() => setLogoError(true)} loading="lazy" />
               )}
             </div>
 
@@ -79,12 +84,10 @@ function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
                 </h3>
                 <ExternalLink className={`w-4 h-4 mt-0.5 shrink-0 transition-all duration-300 ${isHovered ? "opacity-100 text-[#0071e3]" : "opacity-0 text-[#86868b]"}`} />
               </div>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                {tool.tags.slice(0, 3).map((tag) => (
-                  <span key={tag} className={`px-2.5 py-0.5 rounded-[12px] text-[12px] font-medium border ${tool.isSponsored ? "bg-[#0071e3]/[0.04] text-[#0071e3] border-[#0071e3]/10" : "bg-[#f5f5f7] text-[#6e6e73] border-[#e8e8ed]/60"}`}>
-                    {tag}
-                  </span>
-                ))}
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-[12px] text-[#6e6e73] leading-5 truncate">
+                  {getDescriptionSnippet(tool.description)}
+                </p>
                 <span className="flex items-center gap-1 text-[12px] font-medium text-[#86868b] ml-auto">
                   <Eye className="w-3.5 h-3.5" />
                   {tool.views >= 10000 ? `${(tool.views / 10000).toFixed(1)}w` : tool.views.toLocaleString()}

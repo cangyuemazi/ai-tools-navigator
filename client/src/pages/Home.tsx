@@ -11,6 +11,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = { F
 
 type HomeMode = "home" | "all-tools";
 
+function getDescriptionSnippet(description: string, maxLength = 8) {
+  if (description.length <= maxLength) return description;
+  return `${description.slice(0, maxLength)}...`;
+}
+
 function SponsoredToolCard({ tool }: { tool: Tool }) {
   const [isHovered, setIsHovered] = useState(false);
   const [logoError, setLogoError] = useState(false);
@@ -78,7 +83,7 @@ function SponsoredToolCard({ tool }: { tool: Tool }) {
           ) : (
             <img
               src={tool.logo || undefined}
-              className="w-[52px] h-[52px] rounded-[14px] object-contain bg-[#f5f5f7] p-1.5 border border-[#0071e3]/10 shrink-0"
+              className="w-[52px] h-[52px] rounded-[14px] object-contain bg-[#f5f5f7] border border-[#0071e3]/10 shrink-0"
               alt={tool.name}
               onError={() => setLogoError(true)}
             />
@@ -87,13 +92,9 @@ function SponsoredToolCard({ tool }: { tool: Tool }) {
             <h3 className="font-semibold text-[#1d1d1f] text-[16px] line-clamp-1 group-hover:text-[#0071e3] transition-colors pr-12">
               {tool.name}
             </h3>
-            <div className="flex gap-1 mt-1.5 flex-wrap">
-              {tool.tags.slice(0, 2).map((tag: string) => (
-                <span key={tag} className="text-[11px] font-medium bg-[#0071e3]/[0.06] text-[#0071e3] px-2 py-0.5 rounded-[6px] border border-[#0071e3]/10">
-                  {tag}
-                </span>
-              ))}
-            </div>
+            <p className="mt-1.5 text-[12px] text-[#6e6e73] leading-5 truncate pr-12">
+              {getDescriptionSnippet(tool.description)}
+            </p>
           </div>
         </div>
       </a>
@@ -350,7 +351,9 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
                     {cat.children.map((sub: SubCategory) => (
                       <button
                         key={sub.id}
-                        onClick={() => setActiveSubTabs(prev => ({ ...prev, [cat.id]: sub.id }))}
+                        onClick={() => {
+                          setActiveSubTabs(prev => ({ ...prev, [cat.id]: sub.id }));
+                        }}
                         className={`shrink-0 px-4 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-200 ${
                           activeTab === sub.id
                             ? "bg-[#0071e3] text-white shadow-[0_2px_8px_rgba(0,113,227,0.25)]"

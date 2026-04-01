@@ -6,6 +6,7 @@ export default function FloatingWidgets() {
   const [showTop, setShowTop] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [qrError, setQrError] = useState(false);
+  const [customerServiceQrCode, setCustomerServiceQrCode] = useState("");
 
   useEffect(() => {
     // 监听我们给主滚动区域加的 id
@@ -16,10 +17,25 @@ export default function FloatingWidgets() {
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((response) => response.json())
+      .then((data) => {
+        setCustomerServiceQrCode(data.customerServiceQrCode || '');
+        setQrError(false);
+      })
+      .catch(() => {
+        setCustomerServiceQrCode('');
+        setQrError(true);
+      });
+  }, []);
+
   const scrollToTop = () => {
     const container = document.getElementById('main-scroll-container');
     if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const qrCodeSrc = customerServiceQrCode || '/qrcode.png';
 
   return (
     <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-4">
@@ -44,11 +60,11 @@ export default function FloatingWidgets() {
               <div className="w-32 h-32 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center">
                 {qrError ? (
                   <span className="text-xs text-gray-400 text-center">
-                    请在public目录<br />放置qrcode.png
+                    请先在后台上传<br />客服二维码
                   </span>
                 ) : (
                   <img 
-                    src="/qrcode.png" 
+                    src={qrCodeSrc} 
                     alt="客服微信" 
                     className="w-full h-full object-cover" 
                     onError={() => setQrError(true)}

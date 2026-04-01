@@ -149,11 +149,11 @@ async function startServer() {
 
   app.put("/api/admin/settings", requireAuth, async (req, res) => {
     // 👇 接收前端传来的 termsText 和 privacyText
-    const { name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, termsText, privacyText } = req.body;
+    const { name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText } = req.body;
     res.json(await prisma.siteSetting.upsert({ 
       where: { id: "default" }, 
-      update: { name, logo, favicon, titleFontSize: Number(titleFontSize), backgroundColor, companyIntro, icp, email, termsText, privacyText }, 
-      create: { id: "default", name, logo, favicon, titleFontSize: Number(titleFontSize), backgroundColor, companyIntro, icp, email, termsText, privacyText } 
+      update: { name, logo, favicon, titleFontSize: Number(titleFontSize), backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText }, 
+      create: { id: "default", name, logo, favicon, titleFontSize: Number(titleFontSize), backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText } 
     }));
   });
 

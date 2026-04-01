@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { LogIn, Plus, Pencil, Trash2, LogOut, Settings, Box, LayoutGrid, ClipboardList, CheckCircle2, TrendingUp, Eye, BarChart3, Calendar, ArrowUp, ArrowDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
+import EditableLogoField from "@/components/EditableLogoField";
+
 export default function Admin() {
   const [token, setToken] = useState(localStorage.getItem("adminToken") || "");
   const [password, setPassword] = useState("");
@@ -9,7 +11,7 @@ export default function Admin() {
   const [tools, setTools] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   // 👇 状态里加入了 termsText 和 privacyText
-  const [siteSettings, setSiteSettings] = useState({ name: "", logo: "", favicon: "", titleFontSize: 17, backgroundColor: "#f5f5f7", companyIntro: "", icp: "", email: "", termsText: "", privacyText: "" });
+  const [siteSettings, setSiteSettings] = useState({ name: "", logo: "", favicon: "", titleFontSize: 17, backgroundColor: "#f5f5f7", companyIntro: "", icp: "", email: "", customerServiceQrCode: "", termsText: "", privacyText: "" });
   const [pendingTools, setPendingTools] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(new Set());
@@ -20,6 +22,8 @@ export default function Admin() {
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [editingTool, setEditingTool] = useState<any>(null);
   const [toolForm, setToolForm] = useState({ name: "", description: "", url: "", logo: "", categoryId: "", subCategoryId: "", tags: "", isSponsored: false, sponsorExpiry: "", order: 0 });
+  const [toolLogoDirty, setToolLogoDirty] = useState(false);
+  const [siteLogoDirty, setSiteLogoDirty] = useState(false);
   const [pendingIdToResolve, setPendingIdToResolve] = useState<string | null>(null);
   const [editingCat, setEditingCat] = useState<any>(null);
   const [catForm, setCatForm] = useState({ name: "", parentId: "", icon: "Box" });
@@ -38,7 +42,7 @@ export default function Admin() {
       setTools(await tRes.json()); setCategories(await cRes.json()); 
       const settingsData = await sRes.json();
       // 确保如果是 null 则转为空字符串
-      setSiteSettings({ ...settingsData, termsText: settingsData.termsText || "", privacyText: settingsData.privacyText || "" });
+      setSiteSettings({ ...settingsData, customerServiceQrCode: settingsData.customerServiceQrCode || "", termsText: settingsData.termsText || "", privacyText: settingsData.privacyText || "" });
       setPendingTools(await pRes.json());
     } catch (err) { console.error("Failed to fetch admin data:", err); }
   };
@@ -49,6 +53,11 @@ export default function Admin() {
   };
 
   const handleSaveTool = async () => {
+    if (toolLogoDirty) {
+      alert("Logo 已调整但还没有点击“保存 Logo”，请先保存后再发布工具。");
+      return;
+    }
+
     const method = editingTool ? "PUT" : "POST"; const url = editingTool ? `/api/admin/tools/${editingTool.id}` : "/api/admin/tools";
     await fetch(url, { method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ ...toolForm, tags: toolForm.tags.split(",").map(t => t.trim()).filter(Boolean) }) });
     if (pendingIdToResolve) await fetch(`/api/admin/pending-tools/${pendingIdToResolve}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
@@ -62,6 +71,11 @@ export default function Admin() {
   };
 
   const handleSaveSettings = async () => {
+    if (siteLogoDirty) {
+      alert("网站 Logo 已调整但还没有点击“保存 Logo”，请先保存 Logo 再保存站点设置。");
+      return;
+    }
+
     await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(siteSettings) });
     alert("全站设置与法律协议已保存！");
   };
@@ -70,6 +84,7 @@ export default function Admin() {
 
   const openToolModal = (tool: any = null) => {
     setPendingIdToResolve(null); setEditingTool(tool);
+    setToolLogoDirty(false);
     if (tool) setToolForm({ ...tool, tags: tool.tags.join(", "), subCategoryId: tool.subCategoryId || "", sponsorExpiry: tool.sponsorExpiry?.split("T")[0] || "", order: tool.order || 0 });
     else setToolForm({ name: "", description: "", url: "", logo: "", categoryId: categories[0]?.id || "", subCategoryId: "", tags: "", isSponsored: false, sponsorExpiry: "", order: 0 });
     setIsToolModalOpen(true);
@@ -77,6 +92,7 @@ export default function Admin() {
 
   const approvePendingTool = (pending: any) => {
     setEditingTool(null); setPendingIdToResolve(pending.id);
+    setToolLogoDirty(false);
     setToolForm({ name: pending.name, description: pending.description, url: pending.url, logo: pending.logo || "", categoryId: pending.categoryId || categories[0]?.id || "", subCategoryId: pending.subCategoryId || "", tags: "", isSponsored: false, sponsorExpiry: "", order: 0 });
     setIsToolModalOpen(true);
   };
@@ -275,8 +291,9 @@ export default function Admin() {
                 <div><label className="block text-sm font-medium text-[#6e6e73] mb-2">网站名称</label><input type="text" value={siteSettings.name} onChange={e => setSiteSettings({...siteSettings, name: e.target.value})} className="w-full px-4 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[10px] outline-none" /></div>
                 <div><label className="block text-sm font-medium text-[#6e6e73] mb-2">侧边栏网站名称字体大小</label><input type="number" value={siteSettings.titleFontSize} onChange={e => setSiteSettings({...siteSettings, titleFontSize: parseInt(e.target.value)})} className="w-full px-4 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[10px] outline-none" /></div>
                 <div><label className="block text-sm font-medium text-[#6e6e73] mb-2">网站全局背景颜色</label><input type="text" value={siteSettings.backgroundColor} onChange={e => setSiteSettings({...siteSettings, backgroundColor: e.target.value})} className="w-full px-4 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[10px] outline-none" /></div>
-                <div><label className="block text-sm font-medium text-[#6e6e73] mb-2">侧边栏网站 Logo</label><div className="flex items-center gap-4"><div className="w-14 h-14 rounded-[12px] bg-[#f5f5f7] border flex items-center justify-center p-1">{siteSettings.logo ? <img src={siteSettings.logo} className="w-full h-full object-contain" /> : <span className="text-xs text-[#86868b]">无</span>}</div><label className="px-4 py-2 bg-white border border-[#d2d2d7] rounded-[8px] text-sm cursor-pointer hover:bg-[#f5f5f7]">{uploading ? "中..." : "上传Logo"}<input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, url => setSiteSettings({...siteSettings, logo: url}))} className="hidden" /></label></div></div>
+                <div><label className="block text-sm font-medium text-[#6e6e73] mb-2">侧边栏网站 Logo</label><EditableLogoField key="site-settings-logo" value={siteSettings.logo} onChange={(logo) => setSiteSettings({...siteSettings, logo})} uploadUrl="/api/admin/upload" uploadHeaders={{ Authorization: `Bearer ${token}` }} frameSize={92} frameClassName="rounded-[18px]" controlsClassName="bg-white" helperText="上传本地图片后，可在框内拖动和缩放，保存后前端侧边栏会使用这个成品图。" onDirtyChange={setSiteLogoDirty} /></div>
                 <div><label className="block text-sm font-medium text-[#6e6e73] mb-2">浏览器标签页图标</label><div className="flex items-center gap-4"><div className="w-14 h-14 rounded-[12px] bg-[#f5f5f7] border flex items-center justify-center p-1">{siteSettings.favicon ? <img src={siteSettings.favicon} className="w-full h-full object-contain" /> : <span className="text-xs text-[#86868b]">无</span>}</div><label className="px-4 py-2 bg-white border border-[#d2d2d7] rounded-[8px] text-sm cursor-pointer hover:bg-[#f5f5f7]">{uploading ? "中..." : "上传Favicon"}<input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, url => setSiteSettings({...siteSettings, favicon: url}))} className="hidden" /></label></div></div>
+                <div><label className="block text-sm font-medium text-[#6e6e73] mb-2">前端客服二维码</label><div className="flex items-center gap-4"><div className="w-20 h-20 rounded-[16px] bg-[#f5f5f7] border flex items-center justify-center p-1.5 overflow-hidden">{siteSettings.customerServiceQrCode ? <img src={siteSettings.customerServiceQrCode} className="w-full h-full object-cover" /> : <span className="text-xs text-[#86868b] text-center">未上传</span>}</div><label className="px-4 py-2 bg-white border border-[#d2d2d7] rounded-[8px] text-sm cursor-pointer hover:bg-[#f5f5f7]">{uploading ? "中..." : "上传二维码"}<input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, url => setSiteSettings({...siteSettings, customerServiceQrCode: url}))} className="hidden" /></label></div><p className="mt-2 text-[12px] text-[#86868b] leading-relaxed">仅支持本地上传图片。保存设置后，前端右下角客服悬浮入口会自动使用这里的二维码。</p></div>
               </div>
               <div className="space-y-6">
                 <div className="p-5 bg-[#f5f5f7] rounded-[16px] border border-[#e8e8ed]">
@@ -419,7 +436,7 @@ export default function Admin() {
 
       {/* 弹窗部分 */}
       {isCatModalOpen && (<div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center"><div className="bg-white p-6 rounded-[20px] w-[400px]"><h2 className="text-xl font-semibold mb-4">{editingCat ? "编辑分类" : "新增分类"}</h2><div className="space-y-4"><div><label className="block text-sm text-[#6e6e73] mb-1">分类名称</label><input type="text" value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} className="w-full px-3 py-2 border rounded-[8px]" /></div>{!catForm.parentId && <div><label className="block text-sm text-[#6e6e73] mb-1">图标</label><input type="text" value={catForm.icon} onChange={e => setCatForm({...catForm, icon: e.target.value})} className="w-full px-3 py-2 border rounded-[8px]" /></div>}</div><div className="mt-6 flex justify-end gap-3"><button onClick={() => setIsCatModalOpen(false)} className="px-4 py-2 bg-[#f5f5f7] rounded-[8px]">取消</button><button onClick={handleSaveCat} className="px-4 py-2 bg-[#0071e3] text-white rounded-[8px]">保存</button></div></div></div>)}
-      {isToolModalOpen && (<div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center p-4"><div className="bg-white p-6 rounded-[24px] w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"><h2 className="text-2xl font-semibold mb-6">{pendingIdToResolve ? "审核并正式收录" : (editingTool ? "编辑工具" : "新增工具")}</h2><div className="space-y-5"><div className="grid grid-cols-3 gap-4"><div className="col-span-2"><label className="block text-sm mb-1 text-[#6e6e73] font-medium">工具名称 *</label><input type="text" value={toolForm.name} onChange={e => setToolForm({...toolForm, name: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div><label className="block text-sm mb-1 text-[#0071e3] font-bold">排位分 (越高越前)</label><input type="number" value={toolForm.order} onChange={e => setToolForm({...toolForm, order: parseInt(e.target.value) || 0})} className="w-full px-3 py-2.5 bg-[#e6f0fa] border border-[#0071e3]/30 text-[#0071e3] font-bold rounded-[8px] outline-none" placeholder="0" /></div></div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">链接 URL *</label><input type="text" value={toolForm.url} onChange={e => setToolForm({...toolForm, url: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">主分类 *</label><select value={toolForm.categoryId} onChange={e => setToolForm({...toolForm, categoryId: e.target.value, subCategoryId: ""})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none">{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></div>{selectedCategoryObj?.children?.length > 0 && (<div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">子分类</label><select value={toolForm.subCategoryId} onChange={e => setToolForm({...toolForm, subCategoryId: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none"><option value="">(无)</option>{selectedCategoryObj.children.map((sub: any) => <option key={sub.id} value={sub.id}>{sub.name}</option>)}</select></div>)}</div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">一句话简介</label><textarea value={toolForm.description} onChange={e => setToolForm({...toolForm, description: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">Logo 图片</label><div className="flex gap-4 items-center"><div className="w-12 h-12 bg-[#f5f5f7] border rounded-[10px] flex items-center justify-center">{toolForm.logo ? <img src={toolForm.logo} className="w-full h-full object-contain p-1" /> : <span className="text-xs">无</span>}</div><input type="text" value={toolForm.logo} onChange={e => setToolForm({...toolForm, logo: e.target.value})} className="flex-1 px-3 py-2.5 bg-[#f5f5f7] border rounded-[8px]" /><label className="px-4 py-2.5 bg-white border rounded-[8px] cursor-pointer text-sm">{uploading ? "中..." : "上传"}<input type="file" accept="image/*" onChange={e => handleFileUpload(e, url => setToolForm({...toolForm, logo: url}))} className="hidden"/></label></div></div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">标签 (逗号分隔)</label><input type="text" value={toolForm.tags} onChange={e => setToolForm({...toolForm, tags: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border rounded-[8px]" /></div><div className="p-4 bg-[#0071e3]/[0.03] border border-[#0071e3]/20 rounded-[12px]"><label className="flex items-center gap-2 font-semibold cursor-pointer"><input type="checkbox" checked={toolForm.isSponsored} onChange={e => setToolForm({...toolForm, isSponsored: e.target.checked})} className="w-4 h-4 accent-[#0071e3]" /> ⭐ 设为付费赞助优先展示</label>{toolForm.isSponsored && <input type="date" value={toolForm.sponsorExpiry} onChange={e => setToolForm({...toolForm, sponsorExpiry: e.target.value})} className="mt-3 px-3 py-1.5 border rounded-[6px] text-sm" />}</div></div><div className="mt-8 flex justify-end gap-3"><button onClick={() => setIsToolModalOpen(false)} className="px-5 py-2.5 bg-[#f5f5f7] rounded-[10px]">取消</button><button onClick={handleSaveTool} className="px-5 py-2.5 bg-[#0071e3] text-white rounded-[10px]">保存发布</button></div></div></div>)}
+      {isToolModalOpen && (<div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center p-4"><div className="bg-white p-6 rounded-[24px] w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"><h2 className="text-2xl font-semibold mb-6">{pendingIdToResolve ? "审核并正式收录" : (editingTool ? "编辑工具" : "新增工具")}</h2><div className="space-y-5"><div className="grid grid-cols-3 gap-4"><div className="col-span-2"><label className="block text-sm mb-1 text-[#6e6e73] font-medium">工具名称 *</label><input type="text" value={toolForm.name} onChange={e => setToolForm({...toolForm, name: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div><label className="block text-sm mb-1 text-[#0071e3] font-bold">排位分 (越高越前)</label><input type="number" value={toolForm.order} onChange={e => setToolForm({...toolForm, order: parseInt(e.target.value) || 0})} className="w-full px-3 py-2.5 bg-[#e6f0fa] border border-[#0071e3]/30 text-[#0071e3] font-bold rounded-[8px] outline-none" placeholder="0" /></div></div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">链接 URL *</label><input type="text" value={toolForm.url} onChange={e => setToolForm({...toolForm, url: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">主分类 *</label><select value={toolForm.categoryId} onChange={e => setToolForm({...toolForm, categoryId: e.target.value, subCategoryId: ""})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none">{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></div>{selectedCategoryObj?.children?.length > 0 && (<div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">子分类</label><select value={toolForm.subCategoryId} onChange={e => setToolForm({...toolForm, subCategoryId: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none"><option value="">(无)</option>{selectedCategoryObj.children.map((sub: any) => <option key={sub.id} value={sub.id}>{sub.name}</option>)}</select></div>)}</div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">一句话简介</label><textarea value={toolForm.description} onChange={e => setToolForm({...toolForm, description: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div><label className="block text-sm mb-2 text-[#6e6e73] font-medium">Logo 图片</label><EditableLogoField key={`tool-logo-${editingTool?.id || pendingIdToResolve || 'new'}`} value={toolForm.logo} onChange={(logo) => setToolForm({...toolForm, logo})} uploadUrl="/api/admin/upload" uploadHeaders={{ Authorization: `Bearer ${token}` }} frameSize={112} frameClassName="rounded-[20px]" controlsClassName="bg-white" helperText="上传本地图片后，可在当前 Logo 框内拖动和缩放，点击保存 Logo 后再发布。" onDirtyChange={setToolLogoDirty} /></div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">标签 (逗号分隔)</label><input type="text" value={toolForm.tags} onChange={e => setToolForm({...toolForm, tags: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border rounded-[8px]" /></div><div className="p-4 bg-[#0071e3]/[0.03] border border-[#0071e3]/20 rounded-[12px]"><label className="flex items-center gap-2 font-semibold cursor-pointer"><input type="checkbox" checked={toolForm.isSponsored} onChange={e => setToolForm({...toolForm, isSponsored: e.target.checked})} className="w-4 h-4 accent-[#0071e3]" /> ⭐ 设为付费赞助优先展示</label>{toolForm.isSponsored && <input type="date" value={toolForm.sponsorExpiry} onChange={e => setToolForm({...toolForm, sponsorExpiry: e.target.value})} className="mt-3 px-3 py-1.5 border rounded-[6px] text-sm" />}</div></div><div className="mt-8 flex justify-end gap-3"><button onClick={() => setIsToolModalOpen(false)} className="px-5 py-2.5 bg-[#f5f5f7] rounded-[10px]">取消</button><button onClick={handleSaveTool} className="px-5 py-2.5 bg-[#0071e3] text-white rounded-[10px]">保存发布</button></div></div></div>)}
     </div>
   );
 }
