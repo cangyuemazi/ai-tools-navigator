@@ -1,4 +1,6 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import { Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Box } from "lucide-react";
 import ToolGrid from "@/components/ToolGrid";
@@ -9,16 +11,132 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = { F
 
 type HomeMode = "home" | "all-tools";
 
+function SponsoredToolCard({ tool }: { tool: Tool }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+  const [popoverRect, setPopoverRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const updatePopoverRect = useCallback(() => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    setPopoverRect({
+      top: rect.bottom + 8,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isHovered) {
+      setPopoverRect(null);
+      return;
+    }
+
+    updatePopoverRect();
+
+    const handlePositionChange = () => updatePopoverRect();
+    const mainScrollContainer = document.getElementById("main-scroll-container");
+    const sponsorScrollRow = cardRef.current?.closest('[data-sponsored-scroll-row="true"]');
+
+    window.addEventListener("resize", handlePositionChange);
+    mainScrollContainer?.addEventListener("scroll", handlePositionChange, { passive: true });
+    sponsorScrollRow?.addEventListener("scroll", handlePositionChange, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", handlePositionChange);
+      mainScrollContainer?.removeEventListener("scroll", handlePositionChange);
+      sponsorScrollRow?.removeEventListener("scroll", handlePositionChange);
+    };
+  }, [isHovered, updatePopoverRect]);
+
+  return (
+    <div
+      ref={cardRef}
+      className={`snap-start shrink-0 w-[290px] sm:w-[320px] relative ${isHovered ? "z-50" : "z-10"}`}
+      onMouseEnter={() => {
+        updatePopoverRect();
+        setIsHovered(true);
+      }}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <a
+        href={tool.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block bg-white p-5 rounded-[20px] border border-[#0071e3]/20 shadow-[0_8px_20px_rgba(0,113,227,0.08)] hover:-translate-y-1.5 hover:shadow-[0_16px_32px_rgba(0,113,227,0.15)] transition-all duration-300 group relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 bg-gradient-to-bl from-[#0071e3] to-[#42a1ff] text-white text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-bl-[14px] shadow-sm z-10">
+          SPONSORED
+        </div>
+
+        <div className="flex items-center gap-4">
+          {logoError ? (
+            <div className="w-[52px] h-[52px] rounded-[14px] bg-[#f5f5f7] border border-[#0071e3]/10 flex items-center justify-center shrink-0">
+              <span className="text-[20px] font-semibold text-[#86868b]">{tool.name.charAt(0)}</span>
+            </div>
+          ) : (
+            <img
+              src={tool.logo || undefined}
+              className="w-[52px] h-[52px] rounded-[14px] object-contain bg-[#f5f5f7] p-1.5 border border-[#0071e3]/10 shrink-0"
+              alt={tool.name}
+              onError={() => setLogoError(true)}
+            />
+          )}
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold text-[#1d1d1f] text-[16px] line-clamp-1 group-hover:text-[#0071e3] transition-colors pr-12">
+              {tool.name}
+            </h3>
+            <div className="flex gap-1 mt-1.5 flex-wrap">
+              {tool.tags.slice(0, 2).map((tag: string) => (
+                <span key={tag} className="text-[11px] font-medium bg-[#0071e3]/[0.06] text-[#0071e3] px-2 py-0.5 rounded-[6px] border border-[#0071e3]/10">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </a>
+
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {isHovered && popoverRect && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18, ease: [0.2, 0.9, 0.4, 1] }}
+                className="fixed z-[120] pointer-events-none"
+                style={{
+                  top: popoverRect.top,
+                  left: popoverRect.left,
+                  width: popoverRect.width,
+                }}
+              >
+                <div className="bg-white/95 backdrop-blur-xl rounded-[14px] p-4 shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-[#e8e8ed]/80">
+                  <p className="text-[13px] leading-[1.6] text-[#4a4a4f]">{tool.description}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+    </div>
+  );
+}
+
 interface HomeProps {
   mode?: HomeMode;
   resetToken?: number;
   searchQuery?: string;
+  isAllToolsView?: boolean;
   onSelectionChange?: (selectedCategoryId: string | null) => void;
   onActiveSectionChange?: (activeSectionId: string | null) => void;
   onRegisterScrollHandler?: (handler: ((categoryId: string, subCategoryId?: string) => void) | null) => void;
 }
 
-export default function Home({ mode = "home", resetToken = 0, searchQuery = "", onSelectionChange, onActiveSectionChange, onRegisterScrollHandler }: HomeProps) {
+export default function Home({ mode = "home", resetToken = 0, searchQuery = "", isAllToolsView = false, onSelectionChange, onActiveSectionChange, onRegisterScrollHandler }: HomeProps) {
   const [location, setLocation] = useLocation();
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -165,7 +283,7 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
   }, [categories, tools, searchQuery, loading, mode]);
 
   return (
-    <div className="p-6 md:p-10 lg:p-12 max-w-[1600px] flex flex-col gap-8 mx-auto overflow-hidden">
+    <div className="p-6 pb-24 md:p-10 md:pb-28 lg:p-12 lg:pb-32 max-w-[1600px] flex flex-col gap-8 mx-auto overflow-visible">
 
         {/* 赞助商展位 */}
         {mode === "home" && sponsoredTools.length > 0 && !loading && !searchQuery && !selectedCategoryId && (
@@ -181,42 +299,9 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
               </div>
             </div>
             
-            <div className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div data-sponsored-scroll-row="true" className="flex gap-4 overflow-x-auto pt-2 pb-6 snap-x snap-mandatory items-start [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {sponsoredTools.map(tool => (
-                <a 
-                  key={`sponsor-${tool.id}`} 
-                  href={tool.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="snap-start shrink-0 w-[290px] sm:w-[320px] bg-white p-5 rounded-[20px] border border-[#0071e3]/20 shadow-[0_8px_20px_rgba(0,113,227,0.08)] hover:-translate-y-1.5 hover:shadow-[0_16px_32px_rgba(0,113,227,0.15)] transition-all duration-300 group relative overflow-hidden"
-                >
-                  <div className="absolute top-0 right-0 bg-gradient-to-bl from-[#0071e3] to-[#42a1ff] text-white text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-bl-[14px] shadow-sm z-10">
-                    SPONSORED
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mb-3">
-                    <img 
-                      src={tool.logo || undefined}
-                      className="w-[52px] h-[52px] rounded-[14px] object-contain bg-[#f5f5f7] p-1.5 border border-[#0071e3]/10" 
-                      alt={tool.name}
-                    />
-                    <div>
-                      <h3 className="font-semibold text-[#1d1d1f] text-[16px] line-clamp-1 group-hover:text-[#0071e3] transition-colors pr-12">
-                        {tool.name}
-                      </h3>
-                      <div className="flex gap-1 mt-1.5 flex-wrap">
-                        {tool.tags.slice(0, 2).map((tag: string) => (
-                          <span key={tag} className="text-[11px] font-medium bg-[#0071e3]/[0.06] text-[#0071e3] px-2 py-0.5 rounded-[6px] border border-[#0071e3]/10">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-[13px] text-[#6e6e73] line-clamp-2 leading-[1.6]">
-                    {tool.description}
-                  </p>
-                </a>
+                <SponsoredToolCard key={`sponsor-${tool.id}`} tool={tool} />
               ))}
             </div>
           </div>
@@ -226,9 +311,9 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
         {loading ? (
           <ToolGrid tools={[]} categories={categories} selectedCategoryId={null} isLoading={true} />
         ) : mode === "all-tools" ? (
-          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={null} isLoading={false} isAllToolsView={true} />
+          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={null} isLoading={false} isAllToolsView={isAllToolsView} />
         ) : searchQuery ? (
-          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={selectedCategoryId} isLoading={false} isAllToolsView={false} />
+          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={selectedCategoryId} isLoading={false} isAllToolsView={isAllToolsView} />
         ) : (
           categories.map(cat => {
             const catTools = toolsByCategory.get(cat.id);
@@ -281,7 +366,7 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
                 {/* 工具卡片网格 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                   {displayTools.map((tool, idx) => (
-                    <ToolCard key={tool.id} tool={tool} index={idx} isAllToolsView={!selectedCategoryId && !searchQuery} />
+                    <ToolCard key={tool.id} tool={tool} index={idx} isAllToolsView={isAllToolsView} />
                   ))}
                 </div>
 

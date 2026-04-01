@@ -26,15 +26,13 @@ export default function AppShell() {
   }, [path]);
 
   const handleNavigateHome = () => {
-    setSelectedCategoryId(null);
-    setActiveSectionId(null);
-    setLocation("/");
-    setHomeResetToken((value) => value + 1);
+    window.location.assign("/");
   };
 
   const handleNavigateAllTools = () => {
     setSelectedCategoryId(null);
     setActiveSectionId(null);
+    setSearchQuery("");
     setLocation("/all-tools");
     setHomeResetToken((value) => value + 1);
   };
@@ -54,6 +52,8 @@ export default function AppShell() {
     scrollHandlerRef.current?.(categoryId, subCategoryId);
   };
 
+  const isAllToolsView = path === "/all-tools";
+
   let content: React.ReactNode;
   switch (path) {
     case "/":
@@ -62,6 +62,7 @@ export default function AppShell() {
           mode="home"
           resetToken={homeResetToken}
           searchQuery={searchQuery}
+          isAllToolsView={isAllToolsView}
           onSelectionChange={setSelectedCategoryId}
           onActiveSectionChange={setActiveSectionId}
           onRegisterScrollHandler={handleRegisterScrollHandler}
@@ -74,6 +75,7 @@ export default function AppShell() {
           mode="all-tools"
           resetToken={homeResetToken}
           searchQuery={searchQuery}
+          isAllToolsView={isAllToolsView}
           onSelectionChange={setSelectedCategoryId}
           onActiveSectionChange={setActiveSectionId}
           onRegisterScrollHandler={handleRegisterScrollHandler}

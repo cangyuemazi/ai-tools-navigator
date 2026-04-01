@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, memo } from "react";
+import { useState, useRef, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ExternalLink, Eye, Sparkles } from "lucide-react";
 import type { Tool } from "@/types";
@@ -12,43 +12,17 @@ interface ToolCardProps {
 function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [logoError, setLogoError] = useState(false);
-  const [isNearBottom, setIsNearBottom] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Monitor scroll container to detect "near bottom"
-  useEffect(() => {
-    const container = document.getElementById('main-scroll-container');
-    if (!container) return;
-    const onScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      setIsNearBottom(scrollHeight - scrollTop - clientHeight < 200);
-    };
-    container.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => container.removeEventListener('scroll', onScroll);
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
   }, []);
 
-  // Mode A (expand): isAllToolsView AND not near bottom AND card not near viewport bottom
-  // Mode B (tooltip): everything else
-  const getHoverMode = useCallback((): "expand" | "tooltip" => {
-    if (!isAllToolsView) return "tooltip";
-    if (isNearBottom) return "tooltip";
-    if (!cardRef.current) return "expand";
-    const rect = cardRef.current.getBoundingClientRect();
-    if (rect.bottom > window.innerHeight - 150) return "tooltip";
-    return "expand";
-  }, [isAllToolsView, isNearBottom]);
-
-  const [hoverMode, setHoverMode] = useState<"expand" | "tooltip">("expand");
-
-  const handleMouseEnter = () => {
-    setHoverMode(getHoverMode());
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
+  const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
-  };
+  }, []);
+
+  const isTooltipMode = isHovered;
 
   return (
     <motion.div
@@ -56,7 +30,7 @@ function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.2, 0.9, 0.4, 1.1], delay: Math.min(index * 0.03, 0.3) }}
-      className={`relative ${isHovered && hoverMode === "tooltip" ? 'z-50' : 'z-10'}`}
+      className={`relative ${isTooltipMode ? 'z-50' : 'z-10'}`}
     >
       <a
         href={tool.url}
@@ -100,7 +74,7 @@ function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
 
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-2 pr-6 mb-2">
-                <h3 className="text-[16px] font-semibold text-[#1d1d1f] line-clamp-2 tracking-tight leading-[1.3] transition-colors">
+                <h3 className={`text-[16px] font-semibold line-clamp-2 tracking-tight leading-[1.3] transition-colors duration-300 ${isTooltipMode ? "text-[#0071e3]" : "text-[#1d1d1f]"}`}>
                   {tool.name}
                 </h3>
                 <ExternalLink className={`w-4 h-4 mt-0.5 shrink-0 transition-all duration-300 ${isHovered ? "opacity-100 text-[#0071e3]" : "opacity-0 text-[#86868b]"}`} />
@@ -119,36 +93,20 @@ function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
             </div>
           </div>
 
-          {/* expand 模式：悬浮展开描述 */}
-          <AnimatePresence>
-            {isHovered && hoverMode === "expand" && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.25, ease: [0.2, 0.9, 0.4, 1] }}
-                className="overflow-hidden"
-              >
-                <p className={`mt-4 pt-3 border-t text-[13px] leading-[1.5] font-normal ${tool.isSponsored ? "border-[#0071e3]/10 text-[#4a4a4f]" : "border-[#e8e8ed] text-[#6e6e73]"}`}>
-                  {tool.description}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </a>
 
-      {/* tooltip 模式：卡片靠近视口底部时，浮层在上方显示 */}
+      {/* tooltip 模式：统一向下弹出 */}
       <AnimatePresence>
-        {isHovered && hoverMode === "tooltip" && (
+        {isTooltipMode && (
           <motion.div
-            initial={{ opacity: 0, y: 4 }}
+            initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.15 }}
-            className="absolute left-0 right-0 bottom-[calc(100%+6px)] z-[100] pointer-events-none"
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.18, ease: [0.2, 0.9, 0.4, 1] }}
+            className="absolute left-0 right-0 top-[calc(100%+8px)] z-[100] pointer-events-none"
           >
-            <div className="bg-white/90 backdrop-blur-xl rounded-[14px] p-4 shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-[#e8e8ed]/80">
+            <div className="bg-white/95 backdrop-blur-xl rounded-[14px] p-4 shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-[#e8e8ed]/80">
               <p className="text-[13px] leading-[1.6] text-[#4a4a4f]">
                 {tool.description}
               </p>

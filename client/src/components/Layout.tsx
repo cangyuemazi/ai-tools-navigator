@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, Search, Home, Send, Info, Handshake } from "lucide-react";
+import { Menu, Search, Home, Send, Info, Handshake, LayoutGrid } from "lucide-react";
 import Sidebar from "./Sidebar";
 import FloatingWidgets from "./FloatingWidgets";
 import CommandPalette from "./CommandPalette";
@@ -33,6 +33,22 @@ export default function Layout({ children, selectedCategoryId = null, onSelectCa
     if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location, selectedCategoryId]);
 
+  const handleNavigateHome = () => {
+    if (onNavigateHome) {
+      onNavigateHome();
+      return;
+    }
+    window.location.assign("/");
+  };
+
+  const handleNavigateAllTools = () => {
+    if (onNavigateAllTools) {
+      onNavigateAllTools();
+      return;
+    }
+    window.location.assign("/all-tools");
+  };
+
   // 根据当前选择的分类，动态生成网页标题
   const currentCategoryName = categories.find(c => c.id === selectedCategoryId)?.name;
   // 👇 智能防重复判断：如果本来就以"工具"结尾，就不再追加
@@ -56,10 +72,11 @@ export default function Layout({ children, selectedCategoryId = null, onSelectCa
           {/* Desktop sticky top bar */}
           <div className="hidden lg:flex sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-[#e8e8ed]/60 px-6 py-2.5 items-center gap-4">
             <div className="flex items-center gap-1">
-              <button onClick={() => { window.location.href = '/'; }} className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3]`}><Home className="w-4 h-4" /><span>首页</span></button>
+              <button onClick={handleNavigateHome} className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3]`}><Home className="w-4 h-4" /><span>首页</span></button>
               <Link href="/about" className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3] no-underline`}><Info className="w-4 h-4" /><span>关于我们</span></Link>
               <Link href="/submit" className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3] no-underline`}><Send className="w-4 h-4" /><span>提交收录</span></Link>
               <Link href="/partners" className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3] no-underline`}><Handshake className="w-4 h-4" /><span>商务合作</span></Link>
+              <button onClick={handleNavigateAllTools} className={`flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all text-[#6e6e73] hover:bg-[#0071e3]/[0.04] hover:text-[#0071e3]`}><LayoutGrid className="w-4 h-4" /><span>全部工具</span></button>
             </div>
             <div className="flex-1" />
             <div className="relative max-w-xs w-full group">
@@ -79,10 +96,10 @@ export default function Layout({ children, selectedCategoryId = null, onSelectCa
           {showMobileHeader && (
             <div className="lg:hidden sticky top-0 z-30 bg-white/70 backdrop-blur-[20px] border-b border-[#e8e8ed] px-4 py-3 flex items-center gap-3">
               <button onClick={() => setMobileOpen(true)} className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-[12px] hover:bg-[#0071e3]/[0.05]"><Menu className="w-5 h-5" /></button>
-              <div className="flex items-center gap-2 flex-1 min-w-0">
+              <button type="button" onClick={handleNavigateHome} className="flex items-center gap-2 flex-1 min-w-0 text-left">
                 {siteSettings.logo ? <img src={siteSettings.logo} className="w-7 h-7 rounded-[8px] object-contain" /> : <div className="w-7 h-7 rounded-[8px] bg-[#0071e3] flex items-center justify-center"><span className="text-white font-bold text-xs">AI</span></div>}
                 <span className="text-[15px] font-semibold truncate">{siteSettings.name}</span>
-              </div>
+              </button>
               <button onClick={() => window.dispatchEvent(new Event('open-command-palette'))} className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-[12px] hover:bg-[#0071e3]/[0.05]"><Search className="w-5 h-5 text-[#86868b]" /></button>
             </div>
           )}
