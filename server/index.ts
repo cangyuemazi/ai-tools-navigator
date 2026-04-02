@@ -48,14 +48,15 @@ async function startServer() {
 
   app.use(helmet({ 
     crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        // 👇 核心在这里：允许加载本地图片、内存图片(blob)以及阿里云 OSS 的图片
-        imgSrc: ["'self'", "data:", "blob:", "https://*.aliyuncs.com"],
+        imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
         fontSrc: ["'self'", "data:"],
+        connectSrc: ["'self'"],
       },
     }
   }));
