@@ -44,6 +44,7 @@ const prisma = new PrismaClient();
 
 async function startServer() {
   const app = express();
+  app.set("trust proxy", 1);
   const server = createServer(app);
 
   app.use(helmet({ 
