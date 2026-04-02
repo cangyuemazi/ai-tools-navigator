@@ -31,11 +31,11 @@ interface EditableLogoFieldProps {
   savedStatusText?: string;
 }
 
-const MIN_LOGO_ZOOM = 1;
+const MIN_LOGO_ZOOM = 0.2;
 const MAX_LOGO_ZOOM = 3;
 
 function getBaseScale(width: number, height: number, frameSize: number) {
-  return Math.max(frameSize / width, frameSize / height);
+  return Math.min(frameSize / width, frameSize / height);
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -279,7 +279,7 @@ export default function EditableLogoField({
             editor ? (isDragging ? "cursor-grabbing" : "cursor-grab") : "group",
             frameClassName
           )}
-          style={{ width: frameSize, height: frameSize }}
+          style={{ width: frameSize, height: frameSize, backgroundImage: editor ? "linear-gradient(45deg, #e0e0e0 25%, transparent 25%), linear-gradient(-45deg, #e0e0e0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e0e0e0 75%), linear-gradient(-45deg, transparent 75%, #e0e0e0 75%)" : undefined, backgroundSize: editor ? "16px 16px" : undefined, backgroundPosition: editor ? "0 0, 0 8px, 8px -8px, -8px 0px" : undefined }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}

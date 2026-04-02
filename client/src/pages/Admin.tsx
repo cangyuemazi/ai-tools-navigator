@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { LogOut, Settings, Box, LayoutGrid, ClipboardList, BarChart3 } from "lucide-react";
+import { LogOut, Settings, Box, LayoutGrid, ClipboardList, BarChart3, FileText } from "lucide-react";
 
 import EditableLogoField from "@/components/EditableLogoField";
 import AdminDashboard from "./admin/AdminDashboard";
@@ -7,6 +7,7 @@ import AdminPending from "./admin/AdminPending";
 import AdminSettings from "./admin/AdminSettings";
 import AdminCategories from "./admin/AdminCategories";
 import AdminTools from "./admin/AdminTools";
+import AdminContent from "./admin/AdminContent";
 
 export default function Admin() {
   const [token, setToken] = useState(localStorage.getItem("adminToken") || "");
@@ -15,13 +16,13 @@ export default function Admin() {
   const [tools, setTools] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   // ​👇 状态里加入了 termsText 和 privacyText
-  const [siteSettings, setSiteSettings] = useState({ name: "", logo: "", favicon: "", titleFontSize: 17, backgroundColor: "#f5f5f7", companyIntro: "", icp: "", email: "", customerServiceQrCode: "", termsText: "", privacyText: "" });
+  const [siteSettings, setSiteSettings] = useState({ name: "", logo: "", favicon: "", titleFontSize: 17, backgroundColor: "#f5f5f7", companyIntro: "", icp: "", email: "", customerServiceQrCode: "", termsText: "", privacyText: "", aboutContent: "", partnersContent: "" });
   const [pendingTools, setPendingTools] = useState<any[]>([]);
 
   const [isToolModalOpen, setIsToolModalOpen] = useState(false);
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [editingTool, setEditingTool] = useState<any>(null);
-  const [toolForm, setToolForm] = useState({ name: "", description: "", url: "", logo: "", categoryId: "", subCategoryId: "", tags: "", isSponsored: false, sponsorExpiry: "", order: 0 });
+  const [toolForm, setToolForm] = useState({ name: "", description: "", url: "", logo: "", categoryId: "", subCategoryId: "", isSponsored: false, sponsorExpiry: "", order: 0 });
   const [toolLogoDirty, setToolLogoDirty] = useState(false);
   const [siteLogoDirty, setSiteLogoDirty] = useState(false);
   const [pendingIdToResolve, setPendingIdToResolve] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export default function Admin() {
       setTools(await tRes.json()); setCategories(await cRes.json()); 
       const settingsData = await sRes.json();
       // 确保如果是 null 则转为空字符串
-      setSiteSettings({ ...settingsData, customerServiceQrCode: settingsData.customerServiceQrCode || "", termsText: settingsData.termsText || "", privacyText: settingsData.privacyText || "" });
+      setSiteSettings({ ...settingsData, customerServiceQrCode: settingsData.customerServiceQrCode || "", termsText: settingsData.termsText || "", privacyText: settingsData.privacyText || "", aboutContent: settingsData.aboutContent || "", partnersContent: settingsData.partnersContent || "" });
       setPendingTools(await pRes.json());
     } catch (err) { console.error("Failed to fetch admin data:", err); }
   };
@@ -59,7 +60,7 @@ export default function Admin() {
     }
 
     const method = editingTool ? "PUT" : "POST"; const url = editingTool ? `/api/admin/tools/${editingTool.id}` : "/api/admin/tools";
-    await fetch(url, { method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ ...toolForm, tags: toolForm.tags.split(",").map(t => t.trim()).filter(Boolean) }) });
+    await fetch(url, { method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ ...toolForm, tags: [] }) });
     if (pendingIdToResolve) await fetch(`/api/admin/pending-tools/${pendingIdToResolve}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
     setIsToolModalOpen(false); fetchData();
   };
@@ -85,15 +86,15 @@ export default function Admin() {
   const openToolModal = (tool: any = null) => {
     setPendingIdToResolve(null); setEditingTool(tool);
     setToolLogoDirty(false);
-    if (tool) setToolForm({ ...tool, tags: tool.tags.join(", "), subCategoryId: tool.subCategoryId || "", sponsorExpiry: tool.sponsorExpiry?.split("T")[0] || "", order: tool.order || 0 });
-    else setToolForm({ name: "", description: "", url: "", logo: "", categoryId: categories[0]?.id || "", subCategoryId: "", tags: "", isSponsored: false, sponsorExpiry: "", order: 0 });
+    if (tool) setToolForm({ ...tool, subCategoryId: tool.subCategoryId || "", sponsorExpiry: tool.sponsorExpiry?.split("T")[0] || "", order: tool.order || 0 });
+    else setToolForm({ name: "", description: "", url: "", logo: "", categoryId: categories[0]?.id || "", subCategoryId: "", isSponsored: false, sponsorExpiry: "", order: 0 });
     setIsToolModalOpen(true);
   };
 
   const approvePendingTool = (pending: any) => {
     setEditingTool(null); setPendingIdToResolve(pending.id);
     setToolLogoDirty(false);
-    setToolForm({ name: pending.name, description: pending.description, url: pending.url, logo: pending.logo || "", categoryId: pending.categoryId || categories[0]?.id || "", subCategoryId: pending.subCategoryId || "", tags: "", isSponsored: false, sponsorExpiry: "", order: 0 });
+    setToolForm({ name: pending.name, description: pending.description, url: pending.url, logo: pending.logo || "", categoryId: pending.categoryId || categories[0]?.id || "", subCategoryId: pending.subCategoryId || "", isSponsored: false, sponsorExpiry: "", order: 0 });
     setIsToolModalOpen(true);
   };
 
@@ -126,7 +127,7 @@ export default function Admin() {
         <div className="flex gap-6 items-center whitespace-nowrap">
           <span className="font-semibold text-lg border-r pr-6 border-[#e8e8ed]">管理后台</span>
           <nav className="flex gap-2">
-            {[{ id: 'dashboard', icon: BarChart3, label: '数据概览' }, { id: 'pending', icon: ClipboardList, label: `审核中心 ${pendingTools.length > 0 ? `(${pendingTools.length})` : ''}` }, { id: 'tools', icon: Box, label: '工具管理' }, { id: 'categories', icon: LayoutGrid, label: '分类目录' }, { id: 'settings', icon: Settings, label: '全站高级设置' }].map(tab => (
+            {[{ id: 'dashboard', icon: BarChart3, label: '数据概览' }, { id: 'pending', icon: ClipboardList, label: `审核中心 ${pendingTools.length > 0 ? `(${pendingTools.length})` : ''}` }, { id: 'tools', icon: Box, label: '工具管理' }, { id: 'categories', icon: LayoutGrid, label: '分类目录' }, { id: 'settings', icon: Settings, label: '全站高级设置' }, { id: 'content', icon: FileText, label: '其他内容修改' }].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-3 py-1.5 rounded-[8px] text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-[#0071e3]/10 text-[#0071e3]' : 'text-[#6e6e73] hover:bg-[#f5f5f7]'}`}><tab.icon className="w-4 h-4" /> {tab.label}</button>
             ))}
           </nav>
@@ -140,10 +141,11 @@ export default function Admin() {
         {activeTab === "settings" && <AdminSettings siteSettings={siteSettings} setSiteSettings={setSiteSettings} token={token} uploading={uploading} siteLogoDirty={siteLogoDirty} setSiteLogoDirty={setSiteLogoDirty} onSave={handleSaveSettings} onFileUpload={handleFileUpload} />}
         {activeTab === "categories" && <AdminCategories categories={categories} onOpenCatModal={openCatModal} onDelete={handleDelete} onMoveCategory={moveCategory} />}
         {activeTab === "tools" && <AdminTools tools={tools} categories={categories} token={token} onOpenToolModal={openToolModal} onDelete={handleDelete} fetchData={fetchData} />}
+        {activeTab === "content" && <AdminContent siteSettings={siteSettings} setSiteSettings={setSiteSettings} onSave={handleSaveSettings} />}
       </main>
 
       {isCatModalOpen && (<div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center"><div className="bg-white p-6 rounded-[20px] w-[400px]"><h2 className="text-xl font-semibold mb-4">{editingCat ? "编辑分类" : "新增分类"}</h2><div className="space-y-4"><div><label className="block text-sm text-[#6e6e73] mb-1">分类名称</label><input type="text" value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} className="w-full px-3 py-2 border rounded-[8px]" /></div>{!catForm.parentId && <div><label className="block text-sm text-[#6e6e73] mb-1">图标</label><input type="text" value={catForm.icon} onChange={e => setCatForm({...catForm, icon: e.target.value})} className="w-full px-3 py-2 border rounded-[8px]" /></div>}</div><div className="mt-6 flex justify-end gap-3"><button onClick={() => setIsCatModalOpen(false)} className="px-4 py-2 bg-[#f5f5f7] rounded-[8px]">取消</button><button onClick={handleSaveCat} className="px-4 py-2 bg-[#0071e3] text-white rounded-[8px]">保存</button></div></div></div>)}
-      {isToolModalOpen && (<div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center p-4"><div className="bg-white p-6 rounded-[24px] w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"><h2 className="text-2xl font-semibold mb-6">{pendingIdToResolve ? "审核并正式收录" : (editingTool ? "编辑工具" : "新增工具")}</h2><div className="space-y-5"><div className="grid grid-cols-3 gap-4"><div className="col-span-2"><label className="block text-sm mb-1 text-[#6e6e73] font-medium">工具名称 *</label><input type="text" value={toolForm.name} onChange={e => setToolForm({...toolForm, name: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div><label className="block text-sm mb-1 text-[#0071e3] font-bold">排位分 (越高越前)</label><input type="number" value={toolForm.order} onChange={e => setToolForm({...toolForm, order: parseInt(e.target.value) || 0})} className="w-full px-3 py-2.5 bg-[#e6f0fa] border border-[#0071e3]/30 text-[#0071e3] font-bold rounded-[8px] outline-none" placeholder="0" /></div></div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">链接 URL *</label><input type="text" value={toolForm.url} onChange={e => setToolForm({...toolForm, url: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">主分类 *</label><select value={toolForm.categoryId} onChange={e => setToolForm({...toolForm, categoryId: e.target.value, subCategoryId: ""})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none">{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></div>{selectedCategoryObj?.children?.length > 0 && (<div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">子分类</label><select value={toolForm.subCategoryId} onChange={e => setToolForm({...toolForm, subCategoryId: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none"><option value="">(无)</option>{selectedCategoryObj.children.map((sub: any) => <option key={sub.id} value={sub.id}>{sub.name}</option>)}</select></div>)}</div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">一句话简介</label><textarea value={toolForm.description} onChange={e => setToolForm({...toolForm, description: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div><label className="block text-sm mb-2 text-[#6e6e73] font-medium">Logo 图片</label><EditableLogoField key={`tool-logo-${editingTool?.id || pendingIdToResolve || 'new'}`} value={toolForm.logo} onChange={(logo) => setToolForm({...toolForm, logo})} uploadUrl="/api/admin/upload" uploadHeaders={{ Authorization: `Bearer ${token}` }} frameSize={112} frameClassName="rounded-[20px]" controlsClassName="bg-white" helperText="上传本地图片后，可在当前 Logo 框内拖动和缩放，点击保存 Logo 后再发布。" onDirtyChange={setToolLogoDirty} /></div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">标签 (逗号分隔)</label><input type="text" value={toolForm.tags} onChange={e => setToolForm({...toolForm, tags: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border rounded-[8px]" /></div><div className="p-4 bg-[#0071e3]/[0.03] border border-[#0071e3]/20 rounded-[12px]"><label className="flex items-center gap-2 font-semibold cursor-pointer"><input type="checkbox" checked={toolForm.isSponsored} onChange={e => setToolForm({...toolForm, isSponsored: e.target.checked})} className="w-4 h-4 accent-[#0071e3]" /> ⭐ 设为付费赞助优先展示</label>{toolForm.isSponsored && <input type="date" value={toolForm.sponsorExpiry} onChange={e => setToolForm({...toolForm, sponsorExpiry: e.target.value})} className="mt-3 px-3 py-1.5 border rounded-[6px] text-sm" />}</div></div><div className="mt-8 flex justify-end gap-3"><button onClick={() => setIsToolModalOpen(false)} className="px-5 py-2.5 bg-[#f5f5f7] rounded-[10px]">取消</button><button onClick={handleSaveTool} className="px-5 py-2.5 bg-[#0071e3] text-white rounded-[10px]">保存发布</button></div></div></div>)}
+      {isToolModalOpen && (<div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center p-4"><div className="bg-white p-6 rounded-[24px] w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"><h2 className="text-2xl font-semibold mb-6">{pendingIdToResolve ? "审核并正式收录" : (editingTool ? "编辑工具" : "新增工具")}</h2><div className="space-y-5"><div className="grid grid-cols-3 gap-4"><div className="col-span-2"><label className="block text-sm mb-1 text-[#6e6e73] font-medium">工具名称 *</label><input type="text" value={toolForm.name} onChange={e => setToolForm({...toolForm, name: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div><label className="block text-sm mb-1 text-[#0071e3] font-bold">排位分 (越高越前)</label><input type="number" value={toolForm.order} onChange={e => setToolForm({...toolForm, order: parseInt(e.target.value) || 0})} className="w-full px-3 py-2.5 bg-[#e6f0fa] border border-[#0071e3]/30 text-[#0071e3] font-bold rounded-[8px] outline-none" placeholder="0" /></div></div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">链接 URL *</label><input type="text" value={toolForm.url} onChange={e => setToolForm({...toolForm, url: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">主分类 *</label><select value={toolForm.categoryId} onChange={e => setToolForm({...toolForm, categoryId: e.target.value, subCategoryId: ""})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none">{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></div>{selectedCategoryObj?.children?.length > 0 && (<div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">子分类</label><select value={toolForm.subCategoryId} onChange={e => setToolForm({...toolForm, subCategoryId: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none"><option value="">(无)</option>{selectedCategoryObj.children.map((sub: any) => <option key={sub.id} value={sub.id}>{sub.name}</option>)}</select></div>)}</div><div><label className="block text-sm mb-1 text-[#6e6e73] font-medium">一句话简介</label><textarea value={toolForm.description} onChange={e => setToolForm({...toolForm, description: e.target.value})} className="w-full px-3 py-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-[8px] outline-none" /></div><div><label className="block text-sm mb-2 text-[#6e6e73] font-medium">Logo 图片</label><EditableLogoField key={`tool-logo-${editingTool?.id || pendingIdToResolve || 'new'}`} value={toolForm.logo} onChange={(logo) => setToolForm({...toolForm, logo})} uploadUrl="/api/admin/upload" uploadHeaders={{ Authorization: `Bearer ${token}` }} frameSize={112} frameClassName="rounded-[20px]" controlsClassName="bg-white" helperText="上传本地图片后，可在当前 Logo 框内拖动和缩放，点击保存 Logo 后再发布。" onDirtyChange={setToolLogoDirty} /></div><div className="p-4 bg-[#0071e3]/[0.03] border border-[#0071e3]/20 rounded-[12px]"><label className="flex items-center gap-2 font-semibold cursor-pointer"><input type="checkbox" checked={toolForm.isSponsored} onChange={e => setToolForm({...toolForm, isSponsored: e.target.checked})} className="w-4 h-4 accent-[#0071e3]" /> ⭐ 设为付费赞助优先展示</label>{toolForm.isSponsored && <input type="date" value={toolForm.sponsorExpiry} onChange={e => setToolForm({...toolForm, sponsorExpiry: e.target.value})} className="mt-3 px-3 py-1.5 border rounded-[6px] text-sm" />}</div></div><div className="mt-8 flex justify-end gap-3"><button onClick={() => setIsToolModalOpen(false)} className="px-5 py-2.5 bg-[#f5f5f7] rounded-[10px]">取消</button><button onClick={handleSaveTool} className="px-5 py-2.5 bg-[#0071e3] text-white rounded-[10px]">保存发布</button></div></div></div>)}
     </div>
   );
 }

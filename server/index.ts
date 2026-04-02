@@ -11,6 +11,7 @@ import rateLimit from "express-rate-limit";
 import xss from "xss";
 import jwt from "jsonwebtoken";
 import OSS from "ali-oss"; // 👈 新增：引入阿里云 OSS
+import * as XLSX from "xlsx";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,7 +77,7 @@ async function startServer() {
 
   // 👈 修改：Multer 改为内存存储，不再直接写磁盘，方便转存 OSS
   const storage = multer.memoryStorage();
-  const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 限制 5MB
+  const upload = multer({ storage, limits: { fileSize: 3 * 1024 * 1024 } }); // 限制 3MB
 
   // 👈 新增：核心上传逻辑分发器 (OSS 或 本地)
   const uploadToStorage = async (file: Express.Multer.File): Promise<string> => {
@@ -87,9 +88,9 @@ async function startServer() {
       // 存在配置，走阿里云 OSS
       const client = new OSS({
         region: process.env.OSS_REGION || "oss-cn-beijing", // 你的华北2默认地域
-        accessKeyId: process.env.OSS_ACCESS_KEY_ID,
-        accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
-        bucket: process.env.OSS_BUCKET,
+        accessKeyId: process.env.OSS_ACCESS_KEY_ID!,
+        accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET!,
+        bucket: process.env.OSS_BUCKET!,
       });
       const result = await client.put(`uploads/${filename}`, file.buffer);
       // 强制返回 HTTPS 链接
@@ -238,6 +239,48 @@ async function startServer() {
     }
   });
 
+  // ====== 批量上传图片（多文件） ======
+  app.post("/api/admin/upload-batch", requireAuth, upload.array("files", 100), async (req, res) => {
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) return res.status(400).json({ error: "未检测到文件" });
+
+    const results: { originalName: string; url?: string; error?: string }[] = [];
+    for (const file of files) {
+      if (!ALLOWED_IMAGE_MIMES.has(file.mimetype)) {
+        results.push({ originalName: file.originalname, error: "不支持的图片格式" });
+        continue;
+      }
+      try {
+        // 使用原始文件名（去重用 UUID 前缀）
+        const ext = path.extname(file.originalname);
+        const baseName = path.basename(file.originalname, ext);
+        const safeBase = baseName.replace(/[^\w\u4e00-\u9fff\-\.]/g, "_");
+        const filename = `${safeBase}_${crypto.randomUUID().slice(0, 8)}${ext}`;
+
+        if (process.env.OSS_ACCESS_KEY_ID && process.env.OSS_BUCKET) {
+          const client = new OSS({
+            region: process.env.OSS_REGION || "oss-cn-beijing",
+            accessKeyId: process.env.OSS_ACCESS_KEY_ID!,
+            accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET!,
+            bucket: process.env.OSS_BUCKET!,
+          });
+          const result = await client.put(`uploads/${filename}`, file.buffer);
+          results.push({ originalName: file.originalname, url: result.url.replace('http://', 'https://') });
+        } else {
+          const localPath = path.join(uploadDir, filename);
+          fs.writeFileSync(localPath, file.buffer);
+          results.push({ originalName: file.originalname, url: `/uploads/${filename}` });
+        }
+      } catch (e) {
+        results.push({ originalName: file.originalname, error: "上传失败" });
+      }
+    }
+
+    const successCount = results.filter(r => r.url).length;
+    const failCount = results.filter(r => r.error).length;
+    res.json({ total: files.length, successCount, failCount, results });
+  });
+
   app.put("/api/admin/settings", requireAuth, async (req, res) => {
     try {
       const name = xss(req.body.name || "");
@@ -251,10 +294,12 @@ async function startServer() {
       const customerServiceQrCode = req.body.customerServiceQrCode || "";
       const termsText = req.body.termsText || "";
       const privacyText = req.body.privacyText || "";
+      const aboutContent = req.body.aboutContent || "";
+      const partnersContent = req.body.partnersContent || "";
       res.json(await prisma.siteSetting.upsert({ 
         where: { id: "default" }, 
-        update: { name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText }, 
-        create: { id: "default", name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText } 
+        update: { name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText, aboutContent, partnersContent }, 
+        create: { id: "default", name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText, aboutContent, partnersContent } 
       }));
     } catch { res.status(500).json({ error: "保存设置失败" }); }
   });
@@ -294,6 +339,245 @@ async function startServer() {
     );
 
     res.json({ success: true });
+  });
+
+  // ====== 批量导入工具：下载 Excel 模板 ======
+  app.get("/api/admin/tools/template", requireAuth, async (_req, res) => {
+    try {
+      const categories = await prisma.category.findMany({ orderBy: { order: 'asc' } });
+      const mainCats = categories.filter(c => !c.parentId);
+      const subCats = categories.filter(c => c.parentId);
+
+      const wb = XLSX.utils.book_new();
+
+      // === 主工作表：工具导入模板 ===
+      const header = ["名称", "简介", "链接", "Logo图片名", "主分类", "子分类"];
+      const exampleRow = ["ChatGPT", "OpenAI 的智能对话工具", "https://chat.openai.com", "chatgpt", mainCats[0]?.name || "AI对话", ""];
+      const wsData = [header, exampleRow];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      ws["!cols"] = [{ wch: 20 }, { wch: 40 }, { wch: 40 }, { wch: 25 }, { wch: 20 }, { wch: 20 }];
+
+      // 锁定表头行（第一行不可编辑）
+      ws["!protect"] = { sheet: true, objects: true, scenarios: true, formatCells: false, formatColumns: false, formatRows: false, insertColumns: false, insertRows: true, insertHyperlinks: false, deleteColumns: false, deleteRows: true, selectLockedCells: false, sort: false, autoFilter: false, pivotTables: false, selectUnlockedCells: false };
+      // 标记表头单元格为锁定
+      for (let c = 0; c < header.length; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: 0, c });
+        if (ws[cellRef]) ws[cellRef].s = { protection: { locked: true } };
+      }
+      // 标记数据区域单元格为未锁定（可编辑）
+      for (let r = 1; r <= 1000; r++) {
+        for (let c = 0; c < header.length; c++) {
+          const cellRef = XLSX.utils.encode_cell({ r, c });
+          if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
+          ws[cellRef].s = { protection: { locked: false } };
+        }
+      }
+
+      // === 为每个主分类创建子分类引用 Sheet ===
+      // 主分类下拉列表
+      const mainCatNames = mainCats.map(mc => mc.name);
+
+      // 创建隐藏的分类数据 Sheet
+      const catSheetData: string[][] = [];
+      // 第一行：主分类列表
+      catSheetData.push(["主分类列表", ...mainCatNames]);
+      // 后续行：每个主分类对应的子分类列表（以主分类名为列头）
+      const maxSubCount = Math.max(1, ...mainCats.map(mc => subCats.filter(s => s.parentId === mc.id).length));
+      for (let i = 0; i < maxSubCount; i++) {
+        const row: string[] = [""];
+        for (const mc of mainCats) {
+          const children = subCats.filter(s => s.parentId === mc.id);
+          row.push(children[i]?.name || "");
+        }
+        catSheetData.push(row);
+      }
+      const catWs = XLSX.utils.aoa_to_sheet(catSheetData);
+      XLSX.utils.book_append_sheet(wb, catWs, "分类数据");
+
+      // === 设置数据验证（下拉选择） ===
+      // 主分类下拉 (E2:E1000) - 从分类数据 Sheet 读取
+      const mainCatRange = `分类数据!$B$1:$${XLSX.utils.encode_col(mainCatNames.length)}$1`;
+      if (!ws["!dataValidation"]) ws["!dataValidation"] = [];
+      (ws as any)["!dataValidation"].push({
+        sqref: "E2:E1000",
+        type: "list",
+        formula1: mainCatRange,
+      });
+
+      // 为子分类设置 INDIRECT 联动验证
+      // 每个主分类名称对应分类数据Sheet中的一列
+      // 使用定义名称来实现 INDIRECT
+      if (!wb.Workbook) wb.Workbook = {};
+      if (!wb.Workbook.Names) wb.Workbook.Names = [];
+
+      mainCats.forEach((mc, idx) => {
+        const children = subCats.filter(s => s.parentId === mc.id);
+        if (children.length === 0) return;
+        const col = XLSX.utils.encode_col(idx + 1); // B, C, D, ...
+        // 定义名称：用下划线替换特殊字符
+        const safeName = mc.name.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, "_");
+        wb.Workbook.Names.push({
+          Name: safeName,
+          Ref: `分类数据!$${col}$2:$${col}$${children.length + 1}`,
+        });
+      });
+
+      // 子分类下拉 (F2:F1000) - 使用 INDIRECT 关联主分类
+      (ws as any)["!dataValidation"].push({
+        sqref: "F2:F1000",
+        type: "list",
+        formula1: "INDIRECT(E2)",
+      });
+
+      XLSX.utils.book_append_sheet(wb, ws, "工具导入模板");
+
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", "attachment; filename=tools_import_template.xlsx");
+      res.send(Buffer.from(buf));
+    } catch (e) {
+      console.error("生成模板失败:", e);
+      res.status(500).json({ error: "生成模板失败" });
+    }
+  });
+
+  // ====== 批量导入工具：上传 Excel ======
+  const ALLOWED_EXCEL_MIMES = new Set([
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+    "application/octet-stream",
+  ]);
+  app.post("/api/admin/tools/batch-import", requireAuth, upload.single("file"), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "未检测到文件" });
+    if (!ALLOWED_EXCEL_MIMES.has(req.file.mimetype) && !req.file.originalname.match(/\.xlsx?$/i)) {
+      return res.status(400).json({ error: "请上传 .xlsx 或 .xls 格式的 Excel 文件" });
+    }
+
+    try {
+      const wb = XLSX.read(req.file.buffer, { type: "buffer" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+      if (!rows.length) return res.status(400).json({ error: "Excel 中没有数据行" });
+
+      const categories = await prisma.category.findMany();
+      const mainCats = categories.filter(c => !c.parentId);
+      const subCats = categories.filter(c => c.parentId);
+
+      // 构建 OSS 前缀
+      let ossPrefix = "";
+      if (process.env.OSS_ACCESS_KEY_ID && process.env.OSS_BUCKET) {
+        const region = process.env.OSS_REGION || "oss-cn-beijing";
+        ossPrefix = `https://${process.env.OSS_BUCKET}.${region}.aliyuncs.com/uploads/`;
+      }
+
+      // 读取 uploads 目录中的所有文件用于按名称匹配（无后缀匹配）
+      let uploadedFiles: string[] = [];
+      try {
+        uploadedFiles = fs.readdirSync(uploadDir);
+      } catch { /* 目录不存在则跳过 */ }
+
+      const results: { row: number; name: string; ok: boolean; error?: string }[] = [];
+
+      // 支持中文列头和英文列头的字段映射
+      const fieldMap: Record<string, string> = {
+        "名称": "name", "name": "name",
+        "简介": "description", "description": "description",
+        "链接": "url", "url": "url",
+        "Logo图片名": "logoFileName", "logoFileName": "logoFileName",
+        "主分类": "categoryName", "categoryName": "categoryName",
+        "子分类": "subCategoryName", "subCategoryName": "subCategoryName",
+        "标签": "tags", "tags": "tags",
+      };
+
+      for (let i = 0; i < rows.length; i++) {
+        const rawRow = rows[i];
+        const rowNum = i + 2; // Excel 行号（跳过表头）
+
+        // 将中文/英文列头统一映射
+        const row: Record<string, string> = {};
+        for (const [key, value] of Object.entries(rawRow)) {
+          const mapped = fieldMap[key.trim()];
+          if (mapped) row[mapped] = String(value || "").trim();
+        }
+
+        const name = xss(row.name || "");
+        const description = xss(row.description || "");
+        const url = xss(row.url || "");
+        const logoFileName = (row.logoFileName || "").trim();
+        const categoryName = (row.categoryName || "").trim();
+        const subCategoryName = (row.subCategoryName || "").trim();
+
+        if (!name || !url) {
+          results.push({ row: rowNum, name: name || "(空)", ok: false, error: "名称和链接为必填项" });
+          continue;
+        }
+
+        const mainCat = mainCats.find(c => c.name === categoryName);
+        if (!mainCat) {
+          results.push({ row: rowNum, name, ok: false, error: `主分类 "${categoryName}" 不存在` });
+          continue;
+        }
+
+        let subCatId: string | null = null;
+        if (subCategoryName) {
+          const sub = subCats.find(c => c.name === subCategoryName && c.parentId === mainCat.id);
+          if (!sub) {
+            results.push({ row: rowNum, name, ok: false, error: `子分类 "${subCategoryName}" 不存在于 "${categoryName}" 下` });
+            continue;
+          }
+          subCatId = sub.id;
+        }
+
+        let logo = "";
+        if (logoFileName) {
+          if (logoFileName.startsWith("http://") || logoFileName.startsWith("https://")) {
+            logo = logoFileName;
+          } else {
+            // 按名称匹配（不要求后缀）：在uploads目录中查找文件名（不含后缀）匹配的文件
+            const matchedFile = uploadedFiles.find(f => {
+              const nameWithoutExt = path.basename(f, path.extname(f));
+              return nameWithoutExt === logoFileName || f === logoFileName;
+            });
+            if (matchedFile) {
+              if (ossPrefix) {
+                logo = ossPrefix + matchedFile;
+              } else {
+                logo = `/uploads/${matchedFile}`;
+              }
+            } else if (ossPrefix) {
+              logo = ossPrefix + logoFileName;
+            } else {
+              logo = `/uploads/${logoFileName}`;
+            }
+          }
+        }
+
+        try {
+          await prisma.tool.create({
+            data: {
+              name,
+              description,
+              url,
+              logo,
+              categoryId: mainCat.id,
+              subCategoryId: subCatId,
+              tags: "[]",
+            },
+          });
+          results.push({ row: rowNum, name, ok: true });
+        } catch (e: any) {
+          results.push({ row: rowNum, name, ok: false, error: "数据库写入失败" });
+        }
+      }
+
+      const successCount = results.filter(r => r.ok).length;
+      const failCount = results.filter(r => !r.ok).length;
+      res.json({ success: true, total: rows.length, successCount, failCount, details: results });
+    } catch (e) {
+      console.error("批量导入失败:", e);
+      res.status(500).json({ error: "Excel 解析失败，请检查文件格式" });
+    }
   });
 
   app.get("/api/admin/tools", requireAuth, async (req, res) => {

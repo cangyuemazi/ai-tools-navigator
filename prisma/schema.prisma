@@ -70,6 +70,9 @@ model SiteSetting {
   termsText       String? @db.LongText
   privacyText     String? @db.LongText
   
+  aboutContent    String? @db.LongText   // "关于我们"页面 Markdown 内容
+  partnersContent String? @db.LongText   // "商务合作"页面 Markdown 内容
+
   // 👇 仅仅是在 DateTime 后面加了 ?，变成可选字段
   createdAt       DateTime? @default(now())
   updatedAt       DateTime? @updatedAt

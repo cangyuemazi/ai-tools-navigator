@@ -1,11 +1,35 @@
 /**
  * Partners Page
  * Business cooperation and advertising information.
+ * Content is editable via admin settings (Markdown).
  */
+import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { Megaphone, BarChart3, Star, Mail, MessageSquare } from "lucide-react";
 const PARTNERS_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663305027998/HDfCavX5799Z5afQYedwzL/partners-bg-38coXdQr7ZvrTomhq4zwXn.webp";
 
 export default function Partners() {
+  const [content, setContent] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then(r => r.json())
+      .then(data => { if (data.partnersContent) setContent(data.partnersContent); })
+      .catch(() => {});
+  }, []);
+
+  // 有后台 Markdown 内容 → 渲染 Markdown
+  if (content) {
+    return (
+      <div className="max-w-3xl mx-auto px-6 py-10">
+        <div className="prose prose-gray max-w-none prose-headings:text-gray-900 prose-a:text-blue-600 prose-img:rounded-xl">
+          <ReactMarkdown>{content}</ReactMarkdown>
+        </div>
+      </div>
+    );
+  }
+
+  // 兜底：默认硬编码页面
   return (
     <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="mb-8">

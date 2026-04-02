@@ -12,6 +12,8 @@ interface SiteSettingsData {
   customerServiceQrCode: string;
   termsText: string;
   privacyText: string;
+  aboutContent: string;
+  partnersContent: string;
 }
 
 interface AdminSettingsProps {
@@ -47,6 +49,8 @@ export default function AdminSettings({ siteSettings, setSiteSettings, token, up
               <div><label className="block text-sm font-medium text-[#6e6e73] mb-2">工信部备案号</label><input type="text" value={siteSettings.icp} onChange={e => setSiteSettings({...siteSettings, icp: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-[#d2d2d7] rounded-[10px] outline-none" placeholder="京ICP备12345678号" /></div>
             </div>
           </div>
+
+
 
           <div className="p-5 bg-[#e6f0fa] rounded-[16px] border border-[#0071e3]/20">
             <h3 className="font-semibold text-[#0071e3] mb-4">法律与合规协议 (支持直接换行排版)</h3>

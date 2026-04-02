@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ExternalLink, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import type { Tool } from "@/types";
 
 interface ToolCardProps {
@@ -78,11 +78,10 @@ function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="relative mb-2">
+              <div className="mb-2">
                 <h3 className={`text-[16px] font-semibold truncate tracking-tight leading-[1.3] transition-colors duration-300 ${isTooltipMode ? "text-[#0071e3]" : "text-[#1d1d1f]"}`}>
                   {tool.name}
                 </h3>
-                <ExternalLink className={`absolute right-0 top-0.5 w-4 h-4 transition-all duration-300 ${isHovered ? "opacity-100 text-[#0071e3]" : "opacity-0 text-[#86868b]"}`} />
               </div>
               <p className="text-[12px] text-[#6e6e73] leading-5 truncate">
                 {tool.description}
