@@ -10,6 +10,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import xss from "xss";
 import jwt from "jsonwebtoken";
+import OSS from "ali-oss"; // 👈 新增：引入阿里云 OSS
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,11 +46,21 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // 👇 1. 开启基础安全头，隐藏 Express 指纹
-  app.use(helmet({ crossOriginResourcePolicy: false })); // 允许跨域加载图片
+  app.use(helmet({ 
+    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        // 👇 核心在这里：允许加载本地图片、内存图片(blob)以及阿里云 OSS 的图片
+        imgSrc: ["'self'", "data:", "blob:", "https://*.aliyuncs.com"],
+        fontSrc: ["'self'", "data:"],
+      },
+    }
+  }));
   app.use(express.json());
 
-  // 👇 2. 全局基础限流 (每个IP 15分钟内最多请求 300 次)
   const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
     max: 300, 
@@ -57,21 +68,38 @@ async function startServer() {
   });
   app.use("/api/", globalLimiter);
 
-  // 初始化图片上传目录
   const uploadDir = path.resolve(__dirname, "..", "client", "public", "uploads");
   if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
   app.use("/uploads", express.static(uploadDir));
 
-  // Multer 配置
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, `img_${crypto.randomUUID()}${path.extname(file.originalname)}`)
-  });
+  // 👈 修改：Multer 改为内存存储，不再直接写磁盘，方便转存 OSS
+  const storage = multer.memoryStorage();
   const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 限制 5MB
 
-  // ==========================================
-  // 1. 公开数据接口 (前端展示用)
-  // ==========================================
+  // 👈 新增：核心上传逻辑分发器 (OSS 或 本地)
+  const uploadToStorage = async (file: Express.Multer.File): Promise<string> => {
+    const ext = path.extname(file.originalname);
+    const filename = `img_${crypto.randomUUID()}${ext}`;
+
+    if (process.env.OSS_ACCESS_KEY_ID && process.env.OSS_BUCKET) {
+      // 存在配置，走阿里云 OSS
+      const client = new OSS({
+        region: process.env.OSS_REGION || "oss-cn-beijing", // 你的华北2默认地域
+        accessKeyId: process.env.OSS_ACCESS_KEY_ID,
+        accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
+        bucket: process.env.OSS_BUCKET,
+      });
+      const result = await client.put(`uploads/${filename}`, file.buffer);
+      // 强制返回 HTTPS 链接
+      return result.url.replace('http://', 'https://');
+    } else {
+      // 没配置 OSS 时，自动退回本地存储模式
+      const localPath = path.join(uploadDir, filename);
+      fs.writeFileSync(localPath, file.buffer);
+      return `/uploads/${filename}`;
+    }
+  };
+
   app.get("/api/settings", async (req, res) => {
     try {
       let setting = await prisma.siteSetting.findUnique({ where: { id: "default" } });
@@ -108,7 +136,6 @@ async function startServer() {
     } catch (e) { res.status(500).json({ error: "获取工具失败" }); }
   });
 
-  // 允许上传的图片 MIME 白名单
   const ALLOWED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon"]);
 
   const uploadPublicLimiter = rateLimit({
@@ -117,16 +144,21 @@ async function startServer() {
     message: { error: "上传过于频繁，请稍后再试" }
   });
 
-  app.post("/api/upload-public", uploadPublicLimiter, upload.single("file"), (req, res) => {
+  // 👈 修改：前台上传接口接入 OSS
+  app.post("/api/upload-public", uploadPublicLimiter, upload.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "未检测到文件" });
     if (!ALLOWED_IMAGE_MIMES.has(req.file.mimetype)) {
-      fs.unlink(req.file.path, () => {});
       return res.status(400).json({ error: "仅允许上传图片文件 (jpg/png/gif/webp/svg/ico)" });
     }
-    res.json({ url: `/uploads/${req.file.filename}` });
+    try {
+      const url = await uploadToStorage(req.file);
+      res.json({ url });
+    } catch (e) {
+      console.error("OSS上传失败:", e);
+      res.status(500).json({ error: "图片上传失败" });
+    }
   });
 
-  // 👇 3. 针对“提交工具”接口开启严苛限流 (每个IP 1小时只能提交 5 次)
   const submitLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     max: 5,
@@ -153,9 +185,6 @@ async function startServer() {
     } catch { res.status(500).json({ error: "提交工具失败，请稍后重试" }); }
   });
 
-  // ==========================================
-  // 2. 管理后台专用接口 (带鉴权)
-  // ==========================================
   const ADMIN_PASS = process.env.ADMIN_PASSWORD || "admin123";
   const JWT_SECRET = process.env.JWT_SECRET || crypto.randomUUID() + crypto.randomUUID();
   const JWT_EXPIRES_IN = "24h";
@@ -192,13 +221,19 @@ async function startServer() {
     }
   });
 
-  app.post("/api/admin/upload", requireAuth, upload.single("file"), (req, res) => {
+  // 👈 修改：后台管理员上传接口接入 OSS
+  app.post("/api/admin/upload", requireAuth, upload.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "未检测到文件" });
     if (!ALLOWED_IMAGE_MIMES.has(req.file.mimetype)) {
-      fs.unlink(req.file.path, () => {});
       return res.status(400).json({ error: "仅允许上传图片文件" });
     }
-    res.json({ url: `/uploads/${req.file.filename}` });
+    try {
+      const url = await uploadToStorage(req.file);
+      res.json({ url });
+    } catch (e) {
+      console.error("OSS上传失败:", e);
+      res.status(500).json({ error: "图片上传失败" });
+    }
   });
 
   app.put("/api/admin/settings", requireAuth, async (req, res) => {
@@ -322,7 +357,6 @@ async function startServer() {
     }
   });
 
-  // 全局错误兜底中间件 — 捕获所有未处理的异步/同步异常
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     console.error("Unhandled error:", err);
     if (!res.headersSent) {
