@@ -12,6 +12,7 @@ import xss from "xss";
 import jwt from "jsonwebtoken";
 import OSS from "ali-oss"; // 👈 新增：引入阿里云 OSS
 import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,11 +78,16 @@ async function startServer() {
 
   // 👈 修改：Multer 改为内存存储，不再直接写磁盘，方便转存 OSS
   const storage = multer.memoryStorage();
-  const upload = multer({ storage, limits: { fileSize: 3 * 1024 * 1024 } }); // 限制 3MB
+  const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 限制 10MB
 
   // 👈 新增：核心上传逻辑分发器 (OSS 或 本地)
+  const fixOriginalName = (name: string): string => {
+    try { return Buffer.from(name, 'latin1').toString('utf-8'); } catch { return name; }
+  };
+
   const uploadToStorage = async (file: Express.Multer.File): Promise<string> => {
-    const ext = path.extname(file.originalname);
+    const originalName = fixOriginalName(file.originalname);
+    const ext = path.extname(originalName);
     const filename = `img_${crypto.randomUUID()}${ext}`;
 
     if (process.env.OSS_ACCESS_KEY_ID && process.env.OSS_BUCKET) {
@@ -246,14 +252,15 @@ async function startServer() {
 
     const results: { originalName: string; url?: string; error?: string }[] = [];
     for (const file of files) {
+      const originalName = fixOriginalName(file.originalname);
       if (!ALLOWED_IMAGE_MIMES.has(file.mimetype)) {
-        results.push({ originalName: file.originalname, error: "不支持的图片格式" });
+        results.push({ originalName, error: "不支持的图片格式" });
         continue;
       }
       try {
         // 使用原始文件名（去重用 UUID 前缀）
-        const ext = path.extname(file.originalname);
-        const baseName = path.basename(file.originalname, ext);
+        const ext = path.extname(originalName);
+        const baseName = path.basename(originalName, ext);
         const safeBase = baseName.replace(/[^\w\u4e00-\u9fff\-\.]/g, "_");
         const filename = `${safeBase}_${crypto.randomUUID().slice(0, 8)}${ext}`;
 
@@ -265,14 +272,14 @@ async function startServer() {
             bucket: process.env.OSS_BUCKET!,
           });
           const result = await client.put(`uploads/${filename}`, file.buffer);
-          results.push({ originalName: file.originalname, url: result.url.replace('http://', 'https://') });
+          results.push({ originalName, url: result.url.replace('http://', 'https://') });
         } else {
           const localPath = path.join(uploadDir, filename);
           fs.writeFileSync(localPath, file.buffer);
-          results.push({ originalName: file.originalname, url: `/uploads/${filename}` });
+          results.push({ originalName, url: `/uploads/${filename}` });
         }
       } catch (e) {
-        results.push({ originalName: file.originalname, error: "上传失败" });
+        results.push({ originalName, error: "上传失败" });
       }
     }
 
@@ -348,93 +355,118 @@ async function startServer() {
       const mainCats = categories.filter(c => !c.parentId);
       const subCats = categories.filter(c => c.parentId);
 
-      const wb = XLSX.utils.book_new();
+      const wb = new ExcelJS.Workbook();
 
-      // === 主工作表：工具导入模板 ===
-      const header = ["名称", "简介", "链接", "Logo图片名", "主分类", "子分类"];
-      const exampleRow = ["ChatGPT", "OpenAI 的智能对话工具", "https://chat.openai.com", "chatgpt", mainCats[0]?.name || "AI对话", ""];
-      const wsData = [header, exampleRow];
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
-      ws["!cols"] = [{ wch: 20 }, { wch: 40 }, { wch: 40 }, { wch: 25 }, { wch: 20 }, { wch: 20 }];
-
-      // 锁定表头行（第一行不可编辑）
-      ws["!protect"] = { sheet: true, objects: true, scenarios: true, formatCells: false, formatColumns: false, formatRows: false, insertColumns: false, insertRows: true, insertHyperlinks: false, deleteColumns: false, deleteRows: true, selectLockedCells: false, sort: false, autoFilter: false, pivotTables: false, selectUnlockedCells: false };
-      // 标记表头单元格为锁定
-      for (let c = 0; c < header.length; c++) {
-        const cellRef = XLSX.utils.encode_cell({ r: 0, c });
-        if (ws[cellRef]) ws[cellRef].s = { protection: { locked: true } };
-      }
-      // 标记数据区域单元格为未锁定（可编辑）
-      for (let r = 1; r <= 1000; r++) {
-        for (let c = 0; c < header.length; c++) {
-          const cellRef = XLSX.utils.encode_cell({ r, c });
-          if (!ws[cellRef]) ws[cellRef] = { t: "s", v: "" };
-          ws[cellRef].s = { protection: { locked: false } };
-        }
-      }
-
-      // === 为每个主分类创建子分类引用 Sheet ===
-      // 主分类下拉列表
+      // === 隐藏辅助 Sheet：分类数据 ===
+      const catSheet = wb.addWorksheet("分类数据", { state: "veryHidden" });
       const mainCatNames = mainCats.map(mc => mc.name);
-
-      // 创建隐藏的分类数据 Sheet
-      const catSheetData: string[][] = [];
-      // 第一行：主分类列表
-      catSheetData.push(["主分类列表", ...mainCatNames]);
-      // 后续行：每个主分类对应的子分类列表（以主分类名为列头）
+      // 第一行：主分类名称列表（从 B1 开始）
+      catSheet.getRow(1).values = ["主分类列表", ...mainCatNames];
+      // 后续行：每个主分类对应的子分类
       const maxSubCount = Math.max(1, ...mainCats.map(mc => subCats.filter(s => s.parentId === mc.id).length));
       for (let i = 0; i < maxSubCount; i++) {
-        const row: string[] = [""];
+        const row: (string | null)[] = [null];
         for (const mc of mainCats) {
           const children = subCats.filter(s => s.parentId === mc.id);
-          row.push(children[i]?.name || "");
+          row.push(children[i]?.name || null);
         }
-        catSheetData.push(row);
+        catSheet.getRow(i + 2).values = row;
       }
-      const catWs = XLSX.utils.aoa_to_sheet(catSheetData);
-      XLSX.utils.book_append_sheet(wb, catWs, "分类数据");
 
-      // === 设置数据验证（下拉选择） ===
-      // 主分类下拉 (E2:E1000) - 从分类数据 Sheet 读取
-      const mainCatRange = `分类数据!$B$1:$${XLSX.utils.encode_col(mainCatNames.length)}$1`;
-      if (!ws["!dataValidation"]) ws["!dataValidation"] = [];
-      (ws as any)["!dataValidation"].push({
-        sqref: "E2:E1000",
-        type: "list",
-        formula1: mainCatRange,
-      });
-
-      // 为子分类设置 INDIRECT 联动验证
-      // 每个主分类名称对应分类数据Sheet中的一列
-      // 使用定义名称来实现 INDIRECT
-      if (!wb.Workbook) wb.Workbook = {};
-      if (!wb.Workbook.Names) wb.Workbook.Names = [];
-
+      // 为每个主分类创建命名范围（用于 INDIRECT 联动）
+      // 注意：必须为每个主分类都创建，即使没有子分类也要创建空范围，
+      // 以确保 MATCH 的索引和命名范围索引对齐
       mainCats.forEach((mc, idx) => {
         const children = subCats.filter(s => s.parentId === mc.id);
-        if (children.length === 0) return;
-        const col = XLSX.utils.encode_col(idx + 1); // B, C, D, ...
-        // 定义名称：用下划线替换特殊字符
-        const safeName = mc.name.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, "_");
-        wb.Workbook.Names.push({
-          Name: safeName,
-          Ref: `分类数据!$${col}$2:$${col}$${children.length + 1}`,
-        });
+        const colLetter = String.fromCharCode(66 + idx); // B=66, C=67, ...
+        const safeName = `_Cat_${idx}`;
+        const endRow = children.length > 0 ? children.length + 1 : 2;
+        wb.definedNames.add(`'分类数据'!$${colLetter}$2:$${colLetter}$${endRow}`, safeName);
       });
 
-      // 子分类下拉 (F2:F1000) - 使用 INDIRECT 关联主分类
-      (ws as any)["!dataValidation"].push({
-        sqref: "F2:F1000",
-        type: "list",
-        formula1: "INDIRECT(E2)",
+      // === 主工作表：工具导入模板 ===
+      const ws = wb.addWorksheet("工具导入模板");
+      const header = ["名称", "简介", "链接", "Logo图片名", "主分类", "子分类"];
+      const headerRow = ws.getRow(1);
+      headerRow.values = header;
+      // 表头样式：加粗 + 浅灰背景
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, size: 12 };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8E8ED" } };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.protection = { locked: true };
       });
 
-      XLSX.utils.book_append_sheet(wb, ws, "工具导入模板");
+      // 示例行
+      const exampleRow = ws.getRow(2);
+      exampleRow.values = ["ChatGPT", "OpenAI 的智能对话工具", "https://chat.openai.com", "chatgpt", mainCats[0]?.name || "", ""];
 
-      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      // 列宽
+      ws.columns = [
+        { width: 20 }, { width: 40 }, { width: 40 }, { width: 25 }, { width: 20 }, { width: 20 }
+      ];
+
+      // 数据区域：标记为 unlocked（可编辑）
+      for (let r = 2; r <= 1001; r++) {
+        const row = ws.getRow(r);
+        for (let c = 1; c <= 6; c++) {
+          const cell = row.getCell(c);
+          cell.protection = { locked: false };
+        }
+      }
+
+      // === 主分类下拉验证 (E2:E1001) ===
+      // 使用直接列表方式（主分类数量一般不多）
+      if (mainCatNames.length > 0) {
+        for (let r = 2; r <= 1001; r++) {
+          ws.getCell(`E${r}`).dataValidation = {
+            type: "list",
+            allowBlank: true,
+            formulae: [`"${mainCatNames.join(",")}"`],
+            showErrorMessage: true,
+            errorTitle: "无效分类",
+            error: "请从下拉列表中选择主分类",
+          };
+        }
+      }
+
+      // === 子分类联动下拉验证 (F2:F1001) ===
+      // 使用 INDIRECT + MATCH 的方式根据 E 列的主分类查找对应命名范围
+      // 因为 Excel Named Range 不能直接用中文做 INDIRECT，使用 INDEX+MATCH 间接引用
+      // 策略：为每行构建 INDIRECT("_Cat_" & MATCH(E{row}, 主分类列表, 0)-1)
+      if (mainCats.some((mc) => subCats.some(s => s.parentId === mc.id))) {
+        // 计算主分类在分类数据 sheet 中的范围引用（B1:XX1）
+        const lastColLetter = String.fromCharCode(65 + mainCatNames.length); // A + count
+        for (let r = 2; r <= 1001; r++) {
+          ws.getCell(`F${r}`).dataValidation = {
+            type: "list",
+            allowBlank: true,
+            formulae: [`INDIRECT("_Cat_"&MATCH(E${r},'分类数据'!$B$1:$${lastColLetter}$1,0)-1)`],
+            showErrorMessage: true,
+            errorTitle: "无效子分类",
+            error: "请先选择主分类，再从下拉列表中选择子分类",
+          };
+        }
+      }
+
+      // 工作表保护：只有表头行锁定，其余可编辑
+      await ws.protect("", {
+        selectLockedCells: true,
+        selectUnlockedCells: true,
+        formatCells: true,
+        formatColumns: true,
+        formatRows: true,
+        insertRows: true,
+        deleteRows: true,
+        sort: true,
+        autoFilter: true,
+      });
+
+      // 输出
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       res.setHeader("Content-Disposition", "attachment; filename=tools_import_template.xlsx");
-      res.send(Buffer.from(buf));
+      const buffer = await wb.xlsx.writeBuffer();
+      res.send(Buffer.from(buffer));
     } catch (e) {
       console.error("生成模板失败:", e);
       res.status(500).json({ error: "生成模板失败" });
@@ -644,6 +676,15 @@ async function startServer() {
   });
 
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    // 优雅处理 Multer 文件上传错误
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      if (!res.headersSent) res.status(413).json({ error: "文件大小超出限制（最大 10MB）" });
+      return;
+    }
+    if (err.name === 'MulterError') {
+      if (!res.headersSent) res.status(400).json({ error: `上传错误：${err.message}` });
+      return;
+    }
     console.error("Unhandled error:", err);
     if (!res.headersSent) {
       res.status(500).json({ error: "服务器内部错误，请稍后重试" });

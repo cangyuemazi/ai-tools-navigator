@@ -32,6 +32,12 @@ export default function Admin() {
 
   useEffect(() => { if (token) fetchData(); }, [token]);
 
+  // 动态设置管理后台标签页标题
+  useEffect(() => {
+    const siteName = siteSettings.name || "管理后台";
+    document.title = `${siteName} - 管理后台`;
+  }, [siteSettings.name]);
+
   const handleLogin = async (e: React.FormEvent) => { e.preventDefault(); const res = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) }); if (res.ok) { const data = await res.json(); const jwtToken = data.token; setToken(jwtToken); localStorage.setItem("adminToken", jwtToken); } else alert("密码错误"); };
 
   const fetchData = async () => {
@@ -77,8 +83,18 @@ export default function Admin() {
       return;
     }
 
-    await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(siteSettings) });
-    alert("全站设置与法律协议已保存！");
+    try {
+      const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(siteSettings) });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "保存失败" }));
+        alert(`保存失败：${err.error || "服务器错误，请检查后重试"}`);
+        return;
+      }
+      alert("全站设置与法律协议已保存！");
+      fetchData();
+    } catch (e) {
+      alert("保存失败：网络错误，请检查连接后重试");
+    }
   };
 
   const handleDelete = async (type: string, id: string) => { if (!confirm("确定执行此操作吗？不可恢复！")) return; await fetch(`/api/admin/${type}/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }); fetchData(); };
