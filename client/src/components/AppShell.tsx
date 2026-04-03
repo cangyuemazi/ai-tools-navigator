@@ -6,6 +6,7 @@ import About from "@/pages/About";
 import Partners from "@/pages/Partners";
 import Submit from "@/pages/Submit";
 import NotFound from "@/pages/NotFound";
+import type { Category } from "@/types";
 
 type ScrollToCategoryHandler = (categoryId: string, subCategoryId?: string) => void;
 
@@ -17,6 +18,11 @@ export default function AppShell() {
   const [homeResetToken, setHomeResetToken] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const scrollHandlerRef = useRef<ScrollToCategoryHandler | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categories").then(res => res.json()).then(setCategories).catch(err => console.error("Failed to fetch categories:", err));
+  }, []);
 
   useEffect(() => {
     if (path !== "/" && path !== "/all-tools") {
@@ -60,6 +66,7 @@ export default function AppShell() {
       content = (
         <Home
           mode="home"
+          categories={categories}
           resetToken={homeResetToken}
           searchQuery={searchQuery}
           isAllToolsView={isAllToolsView}
@@ -73,6 +80,7 @@ export default function AppShell() {
       content = (
         <Home
           mode="all-tools"
+          categories={categories}
           resetToken={homeResetToken}
           searchQuery={searchQuery}
           isAllToolsView={isAllToolsView}
@@ -98,6 +106,7 @@ export default function AppShell() {
 
   return (
     <Layout
+      categories={categories}
       selectedCategoryId={selectedCategoryId}
       onSelectCategory={handleSidebarSelect}
       activeSectionId={path === "/" ? activeSectionId : null}

@@ -8,20 +8,24 @@ import type { Category } from "@/types";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 import { fetchSiteSettings, getFrontendDocumentTitle, getSiteName, readCachedSiteSettings, type SiteSettings } from "@/lib/site-settings";
 
-interface LayoutProps { children: React.ReactNode; selectedCategoryId?: string | null; onSelectCategory?: (c: string | null, s?: string | null) => void; showMobileHeader?: boolean; activeSectionId?: string | null; onScrollToCategory?: (categoryId: string, subCategoryId?: string) => void; onNavigateHome?: () => void; onNavigateAllTools?: () => void; searchQuery?: string; onSearchChange?: (query: string) => void; }
+interface LayoutProps { children: React.ReactNode; categories?: Category[]; selectedCategoryId?: string | null; onSelectCategory?: (c: string | null, s?: string | null) => void; showMobileHeader?: boolean; activeSectionId?: string | null; onScrollToCategory?: (categoryId: string, subCategoryId?: string) => void; onNavigateHome?: () => void; onNavigateAllTools?: () => void; searchQuery?: string; onSearchChange?: (query: string) => void; }
 
-export default function Layout({ children, selectedCategoryId = null, onSelectCategory, showMobileHeader = true, activeSectionId = null, onScrollToCategory, onNavigateHome, onNavigateAllTools, searchQuery = "", onSearchChange }: LayoutProps) {
+export default function Layout({ children, categories: categoriesProp, selectedCategoryId = null, onSelectCategory, showMobileHeader = true, activeSectionId = null, onScrollToCategory, onNavigateHome, onNavigateAllTools, searchQuery = "", onSearchChange }: LayoutProps) {
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [internalCategories, setInternalCategories] = useState<Category[]>([]);
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => readCachedSiteSettings());
 
+  const categories = categoriesProp ?? internalCategories;
+
   useEffect(() => {
-    fetch("/api/categories").then(res => res.json()).then(data => setCategories(data)).catch(err => console.error("Failed to fetch categories:", err));
+    if (!categoriesProp) {
+      fetch("/api/categories").then(res => res.json()).then(data => setInternalCategories(data)).catch(err => console.error("Failed to fetch categories:", err));
+    }
     fetchSiteSettings().then(setSiteSettings).catch(err => console.error("Failed to fetch settings:", err));
-  }, []);
+  }, [categoriesProp]);
 
   const handleSelectCategory = (c: string | null, s?: string | null) => { if (onSelectCategory) onSelectCategory(c, s); setMobileOpen(false); };
 

@@ -129,6 +129,7 @@ function SponsoredToolCard({ tool }: { tool: Tool }) {
 
 interface HomeProps {
   mode?: HomeMode;
+  categories?: Category[];
   resetToken?: number;
   searchQuery?: string;
   isAllToolsView?: boolean;
@@ -137,15 +138,17 @@ interface HomeProps {
   onRegisterScrollHandler?: (handler: ((categoryId: string, subCategoryId?: string) => void) | null) => void;
 }
 
-export default function Home({ mode = "home", resetToken = 0, searchQuery = "", isAllToolsView = false, onSelectionChange, onActiveSectionChange, onRegisterScrollHandler }: HomeProps) {
+export default function Home({ mode = "home", categories: categoriesProp, resetToken = 0, searchQuery = "", isAllToolsView = false, onSelectionChange, onActiveSectionChange, onRegisterScrollHandler }: HomeProps) {
   const [location, setLocation] = useLocation();
 
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [internalCategories, setInternalCategories] = useState<Category[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [activeSubTabs, setActiveSubTabs] = useState<Record<string, string | null>>({});
+
+  const categories = categoriesProp && categoriesProp.length > 0 ? categoriesProp : internalCategories;
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -153,13 +156,20 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
   });
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/categories").then(res => res.json()),
+    const fetchPromises: Promise<unknown>[] = [
       fetch("/api/tools").then(res => res.json())
-    ])
-    .then(([catsData, toolsData]) => {
-      setCategories(catsData);
-      setTools(toolsData);
+    ];
+    if (!categoriesProp || categoriesProp.length === 0) {
+      fetchPromises.unshift(fetch("/api/categories").then(res => res.json()));
+    }
+    Promise.all(fetchPromises)
+    .then((results) => {
+      if (results.length === 2) {
+        setInternalCategories(results[0] as Category[]);
+        setTools(results[1] as Tool[]);
+      } else {
+        setTools(results[0] as Tool[]);
+      }
       setLoading(false);
     })
     .catch(err => {
@@ -167,7 +177,7 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
       setLoadError("数据加载失败，请刷新页面重试");
       setLoading(false);
     });
-  }, []);
+  }, [categoriesProp]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

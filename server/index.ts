@@ -186,16 +186,17 @@ async function startServer() {
 
   app.get("/api/categories", async (req, res) => {
     try {
-      const mainCategories = await prisma.category.findMany({ where: { parentId: null }, orderBy: { order: 'asc' } });
-      const subCategories = await prisma.category.findMany({ where: { parentId: { not: null } }, orderBy: { order: 'asc' } });
+      const allCategories = await prisma.category.findMany({ orderBy: { order: 'asc' } });
+      const mainCategories = allCategories.filter(c => !c.parentId);
+      const subCategories = allCategories.filter(c => c.parentId);
       res.json(mainCategories.map(cat => ({ ...cat, children: subCategories.filter(sub => sub.parentId === cat.id) })));
     } catch (e) { res.status(500).json({ error: "获取分类失败" }); }
   });
 
   app.get("/api/tools", async (req, res) => {
     try {
-      const page = parseInt(req.query.page as string) || 0;
-      const limit = parseInt(req.query.limit as string) || 0;
+      const page = Math.max(0, parseInt(req.query.page as string) || 0);
+      const limit = Math.max(0, parseInt(req.query.limit as string) || 0);
       const orderBy = [{ isSponsored: 'desc' as const }, { order: 'desc' as const }, { views: 'desc' as const }];
 
       if (page > 0 && limit > 0) {
@@ -404,10 +405,10 @@ async function startServer() {
       const email = xss(req.body.email || "");
       const customerServiceQrCode = req.body.customerServiceQrCode || "";
       const MAX_LONG_TEXT = 500000;
-      const termsText = typeof req.body.termsText === "string" ? req.body.termsText.slice(0, MAX_LONG_TEXT) : "";
-      const privacyText = typeof req.body.privacyText === "string" ? req.body.privacyText.slice(0, MAX_LONG_TEXT) : "";
-      const aboutContent = typeof req.body.aboutContent === "string" ? req.body.aboutContent.slice(0, MAX_LONG_TEXT) : "";
-      const partnersContent = typeof req.body.partnersContent === "string" ? req.body.partnersContent.slice(0, MAX_LONG_TEXT) : "";
+      const termsText = xss(typeof req.body.termsText === "string" ? req.body.termsText.slice(0, MAX_LONG_TEXT) : "");
+      const privacyText = xss(typeof req.body.privacyText === "string" ? req.body.privacyText.slice(0, MAX_LONG_TEXT) : "");
+      const aboutContent = xss(typeof req.body.aboutContent === "string" ? req.body.aboutContent.slice(0, MAX_LONG_TEXT) : "");
+      const partnersContent = xss(typeof req.body.partnersContent === "string" ? req.body.partnersContent.slice(0, MAX_LONG_TEXT) : "");
       res.json(await prisma.siteSetting.upsert({ 
         where: { id: "default" }, 
         update: { name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText, aboutContent, partnersContent }, 
