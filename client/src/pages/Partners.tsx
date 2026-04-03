@@ -3,6 +3,8 @@
  * Business cooperation and advertising information.
  * Content is editable via admin settings (Markdown).
  */
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Megaphone, BarChart3, Star, Mail, MessageSquare } from "lucide-react";
@@ -22,8 +24,10 @@ export default function Partners() {
   if (content) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-10">
-        <div className="prose prose-gray max-w-none prose-headings:text-gray-900 prose-a:text-blue-600 prose-img:rounded-xl">
-          <ReactMarkdown>{content}</ReactMarkdown>
+        <div className="prose prose-gray max-w-none prose-headings:text-gray-900 prose-a:text-[#0071e3] prose-img:rounded-xl">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+            {content}
+          </ReactMarkdown>
         </div>
       </div>
     );

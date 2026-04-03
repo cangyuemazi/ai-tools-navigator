@@ -3,6 +3,8 @@
  * Introduces the team, vision, and contact information.
  * Content is editable via admin settings (Markdown).
  */
+import remarkGfm from "remark-gfm"; // 引入 GFM 插件
+import rehypeRaw from "rehype-raw"; // 👇 新增这行解析 HTML 的插件
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Target, Users, Zap, Mail, Globe } from "lucide-react";
@@ -24,8 +26,11 @@ export default function About() {
   if (content) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-10">
-        <div className="prose prose-gray max-w-none prose-headings:text-gray-900 prose-a:text-blue-600 prose-img:rounded-xl">
-          <ReactMarkdown>{content}</ReactMarkdown>
+        <div className="prose prose-gray max-w-none prose-headings:text-gray-900 prose-a:text-[#0071e3] prose-img:rounded-xl">
+          {/* 👇 加上 rehypePlugins={[rehypeRaw]} 就能完美渲染各种华丽的样式了 */}
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+            {content}
+          </ReactMarkdown>
         </div>
       </div>
     );
