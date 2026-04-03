@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
+import { fetchSiteSettings, readCachedSiteSettings } from "@/lib/site-settings";
 
 export default function Privacy() {
-  const [content, setContent] = useState("正在加载隐私政策...");
+  const [content, setContent] = useState(() => readCachedSiteSettings().privacyText || "正在加载隐私政策...");
   useEffect(() => { 
-    fetch("/api/settings")
-      .then(r => r.json())
+    fetchSiteSettings()
       .then(d => setContent(d.privacyText || "管理员尚未发布隐私政策。"))
-      .catch(() => setContent("加载隐私政策失败，请刷新重试。")); 
+      .catch(() => {
+        if (!readCachedSiteSettings().privacyText) setContent("加载隐私政策失败，请刷新重试。");
+      }); 
   }, []);
 
   return (

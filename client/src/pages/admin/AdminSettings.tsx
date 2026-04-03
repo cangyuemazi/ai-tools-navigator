@@ -1,24 +1,9 @@
 import EditableLogoField from "@/components/EditableLogoField";
-
-interface SiteSettingsData {
-  name: string;
-  logo: string;
-  favicon: string;
-  titleFontSize: number;
-  backgroundColor: string;
-  companyIntro: string;
-  icp: string;
-  email: string;
-  customerServiceQrCode: string;
-  termsText: string;
-  privacyText: string;
-  aboutContent: string;
-  partnersContent: string;
-}
+import type { SiteSettings } from "@/lib/site-settings";
 
 interface AdminSettingsProps {
-  siteSettings: SiteSettingsData;
-  setSiteSettings: (s: SiteSettingsData) => void;
+  siteSettings: SiteSettings;
+  setSiteSettings: (s: SiteSettings) => void;
   token: string;
   uploading: boolean;
   siteLogoDirty: boolean;

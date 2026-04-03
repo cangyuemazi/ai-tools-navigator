@@ -8,6 +8,7 @@ import AdminSettings from "./admin/AdminSettings";
 import AdminCategories from "./admin/AdminCategories";
 import AdminTools from "./admin/AdminTools";
 import AdminContent from "./admin/AdminContent";
+import { cacheSiteSettings, fetchSiteSettings, getAdminDocumentTitle, readCachedSiteSettings, type SiteSettings } from "@/lib/site-settings";
 
 export default function Admin() {
   const [token, setToken] = useState(localStorage.getItem("adminToken") || "");
@@ -15,8 +16,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [tools, setTools] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  // ​👇 状态里加入了 termsText 和 privacyText
-  const [siteSettings, setSiteSettings] = useState({ name: "", logo: "", favicon: "", titleFontSize: 17, backgroundColor: "#f5f5f7", companyIntro: "", icp: "", email: "", customerServiceQrCode: "", termsText: "", privacyText: "", aboutContent: "", partnersContent: "" });
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => readCachedSiteSettings());
   const [pendingTools, setPendingTools] = useState<any[]>([]);
 
   const [isToolModalOpen, setIsToolModalOpen] = useState(false);
@@ -32,31 +32,52 @@ export default function Admin() {
 
   useEffect(() => { if (token) fetchData(); }, [token]);
 
-  // 动态设置管理后台标签页标题
   useEffect(() => {
-    const siteName = siteSettings.name || "管理后台";
-    document.title = `${siteName} - 管理后台`;
-  }, [siteSettings.name]);
+    document.title = getAdminDocumentTitle(siteSettings);
+  }, [siteSettings]);
 
   const handleLogin = async (e: React.FormEvent) => { e.preventDefault(); const res = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) }); if (res.ok) { const data = await res.json(); const jwtToken = data.token; setToken(jwtToken); localStorage.setItem("adminToken", jwtToken); } else alert("密码错误"); };
 
   const fetchData = async () => {
     try {
-      const [tRes, cRes, sRes, pRes] = await Promise.all([
-        fetch("/api/admin/tools", { headers: { Authorization: `Bearer ${token}` } }), fetch("/api/categories"), fetch("/api/settings"), fetch("/api/admin/pending-tools", { headers: { Authorization: `Bearer ${token}` } })
+      const settingsRequest = fetchSiteSettings().catch((error) => {
+        console.error("Failed to fetch site settings:", error);
+        return null;
+      });
+
+      const [tRes, cRes, pRes, settingsData] = await Promise.all([
+        fetch("/api/admin/tools", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/categories"),
+        fetch("/api/admin/pending-tools", { headers: { Authorization: `Bearer ${token}` } }),
+        settingsRequest,
       ]);
       if (tRes.status === 401) { setToken(""); localStorage.removeItem("adminToken"); return; }
-      setTools(await tRes.json()); setCategories(await cRes.json()); 
-      const settingsData = await sRes.json();
-      // 确保如果是 null 则转为空字符串
-      setSiteSettings({ ...settingsData, customerServiceQrCode: settingsData.customerServiceQrCode || "", termsText: settingsData.termsText || "", privacyText: settingsData.privacyText || "", aboutContent: settingsData.aboutContent || "", partnersContent: settingsData.partnersContent || "" });
-      setPendingTools(await pRes.json());
+      if (!tRes.ok || !cRes.ok || !pRes.ok) throw new Error("Failed to fetch admin data");
+
+      const [toolsData, categoriesData, pendingToolsData] = await Promise.all([tRes.json(), cRes.json(), pRes.json()]);
+
+      setTools(toolsData);
+      setCategories(categoriesData);
+      if (settingsData) setSiteSettings(settingsData);
+      setPendingTools(pendingToolsData);
     } catch (err) { console.error("Failed to fetch admin data:", err); }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void) => {
     const file = e.target.files?.[0]; if (!file) return; setUploading(true); const form = new FormData(); form.append("file", file);
-    try { const res = await fetch("/api/admin/upload", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form }); const data = await res.json(); if (data.url) setter(data.url); } catch (err) { alert("上传失败"); } setUploading(false);
+    try {
+      const res = await fetch("/api/admin/upload", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) {
+        alert(data.error || "上传失败");
+        return;
+      }
+      setter(data.url);
+    } catch (err) {
+      alert("上传失败");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSaveTool = async () => {
@@ -85,13 +106,13 @@ export default function Admin() {
 
     try {
       const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(siteSettings) });
+      const payload = await res.json().catch(() => null);
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "保存失败" }));
-        alert(`保存失败：${err.error || "服务器错误，请检查后重试"}`);
+        alert(`保存失败：${payload?.error || "服务器错误，请检查后重试"}`);
         return;
       }
+      if (payload) setSiteSettings(cacheSiteSettings(payload));
       alert("全站设置与法律协议已保存！");
-      fetchData();
     } catch (e) {
       alert("保存失败：网络错误，请检查连接后重试");
     }

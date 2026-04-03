@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, PanelLeftClose, PanelLeftOpen, X, Box } from "lucide-react";
 import type { Category, SubCategory } from "@/types";
+import { fetchSiteSettings, readCachedSiteSettings, type SiteSettings } from "@/lib/site-settings";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = { Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Box };
 
@@ -11,7 +12,7 @@ interface SidebarProps { categories: Category[]; selectedCategoryId: string | nu
 export default function Sidebar({ categories, selectedCategoryId, onSelectCategory, collapsed, onToggleCollapse, mobileOpen, onMobileClose, activeSectionId, onScrollToCategory, onNavigateHome, onNavigateAllTools }: SidebarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [location, setLocation] = useLocation();
-  const [siteSettings, setSiteSettings] = useState<{ name: string; logo: string; titleFontSize: number } | null>(null);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => readCachedSiteSettings());
 
   const [sidebarWidth, setSidebarWidth] = useState(() => parseInt(localStorage.getItem("sidebarWidth") || "280"));
   const [isDragging, setIsDragging] = useState(false);
@@ -30,7 +31,7 @@ export default function Sidebar({ categories, selectedCategoryId, onSelectCatego
     setHoveredCatId(null); setHoveredRect(null);
   }, []);
 
-  useEffect(() => { fetch("/api/settings").then(r => r.json()).then(d => setSiteSettings(d)).catch(err => console.error("Failed to fetch site settings:", err)); }, []);
+  useEffect(() => { fetchSiteSettings().then(setSiteSettings).catch(err => console.error("Failed to fetch site settings:", err)); }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -77,11 +78,11 @@ export default function Sidebar({ categories, selectedCategoryId, onSelectCatego
     <div className="flex flex-col h-full">
       <Link href="/" className="flex items-center h-[72px] px-6 shrink-0 hover:opacity-80 no-underline" onClick={(e) => { e.preventDefault(); handleNavigateHome(); onMobileClose(); }}>
         {collapsed ? (
-          <div className="w-full flex justify-center">{siteSettings?.logo ? <img src={siteSettings.logo} className="w-10 h-10 rounded-[12px] object-contain shadow-sm" /> : <div className="w-10 h-10 rounded-[12px] bg-[#0071e3] flex items-center justify-center"><span className="text-white font-semibold text-sm">AI</span></div>}</div>
+          <div className="w-full flex justify-center">{siteSettings.logo ? <img src={siteSettings.logo} className="w-10 h-10 rounded-[12px] object-contain shadow-sm" /> : <div className="w-10 h-10 rounded-[12px] bg-[#0071e3] flex items-center justify-center"><span className="text-white font-semibold text-sm">AI</span></div>}</div>
         ) : (
           <div className="flex items-center gap-3.5 flex-1 min-w-0">
-            {siteSettings?.logo ? <img src={siteSettings.logo} className="w-9 h-9 rounded-[10px] object-contain shrink-0 shadow-sm" /> : <div className="w-9 h-9 rounded-[10px] bg-[#0071e3] flex items-center justify-center shrink-0"><span className="text-white font-semibold text-[13px]">AI</span></div>}
-            {siteSettings?.name && <span className="font-semibold text-[#1d1d1f] tracking-tight truncate" style={{ fontSize: `${siteSettings.titleFontSize || 17}px` }}>{siteSettings.name}</span>}
+            {siteSettings.logo ? <img src={siteSettings.logo} className="w-9 h-9 rounded-[10px] object-contain shrink-0 shadow-sm" /> : <div className="w-9 h-9 rounded-[10px] bg-[#0071e3] flex items-center justify-center shrink-0"><span className="text-white font-semibold text-[13px]">AI</span></div>}
+            {siteSettings.name && <span className="font-semibold text-[#1d1d1f] tracking-tight truncate" style={{ fontSize: `${siteSettings.titleFontSize || 17}px` }}>{siteSettings.name}</span>}
           </div>
         )}
       </Link>

@@ -1,11 +1,8 @@
-interface SiteSettingsData {
-  aboutContent: string;
-  partnersContent: string;
-}
+import type { SiteSettings } from "@/lib/site-settings";
 
 interface AdminContentProps {
-  siteSettings: SiteSettingsData;
-  setSiteSettings: (s: any) => void;
+  siteSettings: SiteSettings;
+  setSiteSettings: (s: SiteSettings) => void;
   onSave: () => void;
 }
 

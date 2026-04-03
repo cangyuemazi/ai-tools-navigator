@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { ArrowUp, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fetchSiteSettings, readCachedSiteSettings } from '@/lib/site-settings';
 
 export default function FloatingWidgets() {
+  const cachedSiteSettings = readCachedSiteSettings();
   const [showTop, setShowTop] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [qrError, setQrError] = useState(false);
-  const [customerServiceQrCode, setCustomerServiceQrCode] = useState("");
+  const [customerServiceQrCode, setCustomerServiceQrCode] = useState(cachedSiteSettings.customerServiceQrCode);
 
   useEffect(() => {
     // 监听我们给主滚动区域加的 id
@@ -18,15 +20,16 @@ export default function FloatingWidgets() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/settings')
-      .then((response) => response.json())
+    fetchSiteSettings()
       .then((data) => {
         setCustomerServiceQrCode(data.customerServiceQrCode || '');
         setQrError(false);
       })
       .catch(() => {
-        setCustomerServiceQrCode('');
-        setQrError(true);
+        if (!cachedSiteSettings.customerServiceQrCode) {
+          setCustomerServiceQrCode('');
+          setQrError(true);
+        }
       });
   }, []);
 

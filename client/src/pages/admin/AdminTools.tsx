@@ -54,7 +54,13 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
 
   const handleDownloadTemplate = () => {
     fetch("/api/admin/tools/template", { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.blob())
+      .then(async (r) => {
+        if (!r.ok) {
+          const data = await r.json().catch(() => null);
+          throw new Error(data?.error || "下载模板失败");
+        }
+        return r.blob();
+      })
       .then(blob => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -63,7 +69,7 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
         a.click();
         URL.revokeObjectURL(url);
       })
-      .catch(() => alert("下载模板失败"));
+      .catch((error) => alert(error.message || "下载模板失败"));
   };
 
   const handleBatchImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,8 +95,9 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
       }
     } catch {
       alert("导入失败，请检查网络");
+    } finally {
+      setImporting(false);
     }
-    setImporting(false);
   };
 
   const handleBatchImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,8 +124,9 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
       }
     } catch {
       alert("上传失败，请检查网络");
+    } finally {
+      setUploadingImages(false);
     }
-    setUploadingImages(false);
   };
 
   return (
@@ -153,6 +161,7 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
           <input ref={batchImageInputRef} type="file" accept="image/*" multiple onChange={handleBatchImageUpload} className="hidden" disabled={uploadingImages} />
         </label>
       </div>
+      <p className="mb-4 text-[13px] text-[#86868b]">批量导入时，“Logo图片名”列可填写批量上传图片的原始文件名，可带或不带扩展名；也支持直接填写完整图片 URL。</p>
       <div className="bg-white rounded-[20px] shadow-sm border border-[#e8e8ed] overflow-hidden">
         <table className="w-full text-left text-sm">
           <thead>

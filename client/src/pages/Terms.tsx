@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
+import { fetchSiteSettings, readCachedSiteSettings } from "@/lib/site-settings";
 
 export default function Terms() {
-  const [content, setContent] = useState("正在加载协议内容...");
+  const [content, setContent] = useState(() => readCachedSiteSettings().termsText || "正在加载协议内容...");
   useEffect(() => { 
-    fetch("/api/settings")
-      .then(r => r.json())
+    fetchSiteSettings()
       .then(d => setContent(d.termsText || "管理员尚未发布提交服务协议。"))
-      .catch(() => setContent("加载协议内容失败，请刷新重试。")); 
+      .catch(() => {
+        if (!readCachedSiteSettings().termsText) setContent("加载协议内容失败，请刷新重试。");
+      }); 
   }, []);
   
   return (

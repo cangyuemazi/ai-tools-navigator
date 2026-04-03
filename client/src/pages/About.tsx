@@ -6,15 +6,17 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Target, Users, Zap, Mail, Globe } from "lucide-react";
+import { fetchSiteSettings, getSiteName, readCachedSiteSettings } from "@/lib/site-settings";
 const ABOUT_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663305027998/HDfCavX5799Z5afQYedwzL/about-bg-8BTeZiLvbehD9zZefgNo7T.webp";
 
 export default function About() {
-  const [content, setContent] = useState<string | null>(null);
+  const [siteSettings, setSiteSettings] = useState(() => readCachedSiteSettings());
+  const [content, setContent] = useState<string | null>(siteSettings.aboutContent || null);
+  const siteName = getSiteName(siteSettings);
 
   useEffect(() => {
-    fetch("/api/settings")
-      .then(r => r.json())
-      .then(data => { if (data.aboutContent) setContent(data.aboutContent); })
+    fetchSiteSettings()
+      .then(data => { setSiteSettings(data); setContent(data.aboutContent || null); })
       .catch(() => {});
   }, []);
 
@@ -41,7 +43,7 @@ export default function About() {
           <img src={ABOUT_BG} alt="About" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
           <div className="absolute bottom-6 left-6">
-            <h2 className="text-white text-xl font-bold">智能零零AI工具</h2>
+            <h2 className="text-white text-xl font-bold">{siteName}</h2>
             <p className="text-white/80 text-sm mt-1">发现最好用的AI工具</p>
           </div>
         </div>
@@ -55,7 +57,7 @@ export default function About() {
               <h3 className="text-lg font-bold text-gray-900">我们的愿景</h3>
             </div>
             <p className="text-gray-600 leading-relaxed">
-              智能零零AI工具致力于成为中文互联网最全面、最权威的AI工具导航平台。我们相信AI技术正在改变每个人的工作和生活方式，而我们的使命是帮助用户快速发现和使用最适合自己的AI工具，降低AI技术的使用门槛。
+              {siteName}致力于成为中文互联网最全面、最权威的AI工具导航平台。我们相信AI技术正在改变每个人的工作和生活方式，而我们的使命是帮助用户快速发现和使用最适合自己的AI工具，降低AI技术的使用门槛。
             </p>
           </div>
 

@@ -5,7 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="robots" content="index, follow" />
     <meta name="author" content="北京零零科技有限公司" />
-    <title>AI工具导航</title>
+    <script>
+      (function () {
+        var defaultSiteName = "智能零零AI工具";
+        var cacheKey = "site-settings-cache:v1";
+
+        try {
+          var raw = window.localStorage.getItem(cacheKey);
+          var cached = raw ? JSON.parse(raw) : null;
+          var siteName = cached && typeof cached.name === "string" && cached.name.trim() ? cached.name.trim() : defaultSiteName;
+          var isAdminRoute = window.location.pathname.indexOf("/admin") === 0;
+
+          document.title = isAdminRoute ? siteName + " - 管理后台" : siteName;
+
+          if (cached && typeof cached.favicon === "string" && cached.favicon.trim()) {
+            var faviconLink = document.querySelector('link[rel="icon"]');
+
+            if (!faviconLink) {
+              faviconLink = document.createElement("link");
+              faviconLink.setAttribute("rel", "icon");
+              document.head.appendChild(faviconLink);
+            }
+
+            faviconLink.setAttribute("href", cached.favicon.trim());
+          }
+        } catch {
+          document.title = defaultSiteName;
+        }
+      })();
+    </script>
+    <title>智能零零AI工具</title>
     <meta name="description" content="发现并收录全球最好用的人工智能工具" />
     <meta name="keywords" content="AI工具,AI导航,人工智能,ChatGPT,AI写作,AI绘画,智能零零" />
   </head>

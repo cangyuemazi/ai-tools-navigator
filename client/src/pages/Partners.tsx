@@ -6,15 +6,15 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Megaphone, BarChart3, Star, Mail, MessageSquare } from "lucide-react";
+import { fetchSiteSettings, readCachedSiteSettings } from "@/lib/site-settings";
 const PARTNERS_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663305027998/HDfCavX5799Z5afQYedwzL/partners-bg-38coXdQr7ZvrTomhq4zwXn.webp";
 
 export default function Partners() {
-  const [content, setContent] = useState<string | null>(null);
+  const [content, setContent] = useState<string | null>(() => readCachedSiteSettings().partnersContent || null);
 
   useEffect(() => {
-    fetch("/api/settings")
-      .then(r => r.json())
-      .then(data => { if (data.partnersContent) setContent(data.partnersContent); })
+    fetchSiteSettings()
+      .then(data => { setContent(data.partnersContent || null); })
       .catch(() => {});
   }, []);
 

@@ -42,6 +42,68 @@ function loadLocalEnv() {
 
 loadLocalEnv();
 
+const DEFAULT_SITE_NAME = "智能零零AI工具";
+const TOOL_IMPORT_SHEET_NAME = "工具导入模板";
+const UPLOADS_PREFIX = "uploads/";
+
+const sanitizeUploadBaseName = (value: string) => value.replace(/[^\w\u4e00-\u9fff\-\.]/g, "_");
+
+const getOssClient = () => {
+  if (!process.env.OSS_ACCESS_KEY_ID || !process.env.OSS_ACCESS_KEY_SECRET || !process.env.OSS_BUCKET) return null;
+
+  return new OSS({
+    region: process.env.OSS_REGION || "oss-cn-beijing",
+    accessKeyId: process.env.OSS_ACCESS_KEY_ID,
+    accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
+    bucket: process.env.OSS_BUCKET,
+  });
+};
+
+const getOssUploadPrefix = () => {
+  if (!process.env.OSS_BUCKET || !process.env.OSS_ACCESS_KEY_ID) return "";
+  const region = process.env.OSS_REGION || "oss-cn-beijing";
+  return `https://${process.env.OSS_BUCKET}.${region}.aliyuncs.com/${UPLOADS_PREFIX}`;
+};
+
+const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : String(error);
+
+const isMissingSchemaColumnError = (error: unknown) => /Unknown column|does not exist|P2022/i.test(getErrorMessage(error));
+
+const normalizeImportHeader = (value: string) => value.replace(/\uFEFF/g, "").replace(/\s+/g, "").trim().toLowerCase();
+
+const getUploadedFileName = (value: string) => value.split("/").pop() || value;
+
+const getUploadedFileBaseName = (value: string) => {
+  const fileName = getUploadedFileName(value);
+  const ext = path.extname(fileName);
+  return ext ? fileName.slice(0, -ext.length) : fileName;
+};
+
+const matchUploadedFile = (uploadedFiles: string[], lookupValue: string) => {
+  const trimmedValue = lookupValue.trim();
+  if (!trimmedValue) return null;
+
+  const directFileName = getUploadedFileName(trimmedValue);
+  const directBaseName = getUploadedFileBaseName(directFileName);
+  const sanitizedBaseName = sanitizeUploadBaseName(directBaseName);
+  const normalizedFileName = directFileName.toLowerCase();
+  const normalizedBaseName = directBaseName.toLowerCase();
+  const normalizedSanitizedBaseName = sanitizedBaseName.toLowerCase();
+
+  return uploadedFiles.find((candidate) => {
+    const candidateFileName = getUploadedFileName(candidate);
+    const candidateBaseName = getUploadedFileBaseName(candidateFileName);
+    const normalizedCandidateFileName = candidateFileName.toLowerCase();
+    const normalizedCandidateBaseName = candidateBaseName.toLowerCase();
+
+    return normalizedCandidateFileName === normalizedFileName
+      || normalizedCandidateBaseName === normalizedBaseName
+      || normalizedCandidateBaseName === normalizedSanitizedBaseName
+      || normalizedCandidateBaseName.startsWith(`${normalizedBaseName}_`)
+      || normalizedCandidateBaseName.startsWith(`${normalizedSanitizedBaseName}_`);
+  }) || null;
+};
+
 const prisma = new PrismaClient();
 
 async function startServer() {
@@ -89,16 +151,10 @@ async function startServer() {
     const originalName = fixOriginalName(file.originalname);
     const ext = path.extname(originalName);
     const filename = `img_${crypto.randomUUID()}${ext}`;
+    const client = getOssClient();
 
-    if (process.env.OSS_ACCESS_KEY_ID && process.env.OSS_BUCKET) {
-      // 存在配置，走阿里云 OSS
-      const client = new OSS({
-        region: process.env.OSS_REGION || "oss-cn-beijing", // 你的华北2默认地域
-        accessKeyId: process.env.OSS_ACCESS_KEY_ID!,
-        accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET!,
-        bucket: process.env.OSS_BUCKET!,
-      });
-      const result = await client.put(`uploads/${filename}`, file.buffer);
+    if (client) {
+      const result = await client.put(`${UPLOADS_PREFIX}${filename}`, file.buffer);
       // 强制返回 HTTPS 链接
       return result.url.replace('http://', 'https://');
     } else {
@@ -112,9 +168,12 @@ async function startServer() {
   app.get("/api/settings", async (req, res) => {
     try {
       let setting = await prisma.siteSetting.findUnique({ where: { id: "default" } });
-      if (!setting) setting = await prisma.siteSetting.create({ data: { id: "default", name: "智能零零AI工具" } });
+      if (!setting) setting = await prisma.siteSetting.create({ data: { id: "default", name: DEFAULT_SITE_NAME } });
       res.json(setting);
-    } catch (e) { res.status(500).json({ error: "获取设置失败" }); }
+    } catch (error) {
+      console.error("获取设置失败:", error);
+      res.status(500).json({ error: isMissingSchemaColumnError(error) ? "站点设置数据表结构未更新，请先执行数据库迁移" : "获取设置失败" });
+    }
   });
 
   app.get("/api/categories", async (req, res) => {
@@ -251,6 +310,7 @@ async function startServer() {
     if (!files || files.length === 0) return res.status(400).json({ error: "未检测到文件" });
 
     const results: { originalName: string; url?: string; error?: string }[] = [];
+    const client = getOssClient();
     for (const file of files) {
       const originalName = fixOriginalName(file.originalname);
       if (!ALLOWED_IMAGE_MIMES.has(file.mimetype)) {
@@ -261,17 +321,11 @@ async function startServer() {
         // 使用原始文件名（去重用 UUID 前缀）
         const ext = path.extname(originalName);
         const baseName = path.basename(originalName, ext);
-        const safeBase = baseName.replace(/[^\w\u4e00-\u9fff\-\.]/g, "_");
+        const safeBase = sanitizeUploadBaseName(baseName);
         const filename = `${safeBase}_${crypto.randomUUID().slice(0, 8)}${ext}`;
 
-        if (process.env.OSS_ACCESS_KEY_ID && process.env.OSS_BUCKET) {
-          const client = new OSS({
-            region: process.env.OSS_REGION || "oss-cn-beijing",
-            accessKeyId: process.env.OSS_ACCESS_KEY_ID!,
-            accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET!,
-            bucket: process.env.OSS_BUCKET!,
-          });
-          const result = await client.put(`uploads/${filename}`, file.buffer);
+        if (client) {
+          const result = await client.put(`${UPLOADS_PREFIX}${filename}`, file.buffer);
           results.push({ originalName, url: result.url.replace('http://', 'https://') });
         } else {
           const localPath = path.join(uploadDir, filename);
@@ -290,25 +344,28 @@ async function startServer() {
 
   app.put("/api/admin/settings", requireAuth, async (req, res) => {
     try {
-      const name = xss(req.body.name || "");
+      const name = xss(req.body.name || "").trim() || DEFAULT_SITE_NAME;
       const logo = req.body.logo || "";
       const favicon = req.body.favicon || "";
-      const titleFontSize = Number(req.body.titleFontSize) || 17;
-      const backgroundColor = xss(req.body.backgroundColor || "#f5f5f7");
+      const titleFontSize = Math.min(72, Math.max(12, Number(req.body.titleFontSize) || 17));
+      const backgroundColor = xss(req.body.backgroundColor || "#f5f5f7").trim() || "#f5f5f7";
       const companyIntro = xss(req.body.companyIntro || "");
       const icp = xss(req.body.icp || "");
       const email = xss(req.body.email || "");
       const customerServiceQrCode = req.body.customerServiceQrCode || "";
-      const termsText = req.body.termsText || "";
-      const privacyText = req.body.privacyText || "";
-      const aboutContent = req.body.aboutContent || "";
-      const partnersContent = req.body.partnersContent || "";
+      const termsText = typeof req.body.termsText === "string" ? req.body.termsText : "";
+      const privacyText = typeof req.body.privacyText === "string" ? req.body.privacyText : "";
+      const aboutContent = typeof req.body.aboutContent === "string" ? req.body.aboutContent : "";
+      const partnersContent = typeof req.body.partnersContent === "string" ? req.body.partnersContent : "";
       res.json(await prisma.siteSetting.upsert({ 
         where: { id: "default" }, 
         update: { name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText, aboutContent, partnersContent }, 
         create: { id: "default", name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText, aboutContent, partnersContent } 
       }));
-    } catch { res.status(500).json({ error: "保存设置失败" }); }
+    } catch (error) {
+      console.error("保存设置失败:", error);
+      res.status(500).json({ error: isMissingSchemaColumnError(error) ? "站点设置数据表结构未更新，请先执行数据库迁移" : "保存设置失败" });
+    }
   });
 
   app.post("/api/admin/categories", requireAuth, async (req, res) => {
@@ -487,7 +544,12 @@ async function startServer() {
 
     try {
       const wb = XLSX.read(req.file.buffer, { type: "buffer" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
+      const worksheetName = wb.SheetNames.find((name) => name === TOOL_IMPORT_SHEET_NAME)
+        || wb.SheetNames.find((name, index) => !wb.Workbook?.Sheets?.[index]?.Hidden)
+        || wb.SheetNames[0];
+      const ws = wb.Sheets[worksheetName];
+      if (!ws) return res.status(400).json({ error: "未找到可导入的工作表，请使用系统模板重新下载后填写" });
+
       const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
 
       if (!rows.length) return res.status(400).json({ error: "Excel 中没有数据行" });
@@ -496,12 +558,8 @@ async function startServer() {
       const mainCats = categories.filter(c => !c.parentId);
       const subCats = categories.filter(c => c.parentId);
 
-      // 构建 OSS 前缀
-      let ossPrefix = "";
-      if (process.env.OSS_ACCESS_KEY_ID && process.env.OSS_BUCKET) {
-        const region = process.env.OSS_REGION || "oss-cn-beijing";
-        ossPrefix = `https://${process.env.OSS_BUCKET}.${region}.aliyuncs.com/uploads/`;
-      }
+      const ossPrefix = getOssUploadPrefix();
+      const ossClient = getOssClient();
 
       // 读取 uploads 目录中的所有文件用于按名称匹配（无后缀匹配）
       let uploadedFiles: string[] = [];
@@ -509,16 +567,33 @@ async function startServer() {
         uploadedFiles = fs.readdirSync(uploadDir);
       } catch { /* 目录不存在则跳过 */ }
 
+      if (ossClient) {
+        try {
+          let marker: string | undefined;
+          do {
+            const listResult = await ossClient.list({ prefix: UPLOADS_PREFIX, marker, "max-keys": 1000 }, {});
+            const ossFiles = (listResult.objects || []).map((file) => file.name.startsWith(UPLOADS_PREFIX) ? file.name.slice(UPLOADS_PREFIX.length) : file.name);
+            uploadedFiles.push(...ossFiles);
+            marker = listResult.isTruncated ? listResult.nextMarker : undefined;
+          } while (marker);
+        } catch (error) {
+          console.error("读取 OSS 图片列表失败:", error);
+        }
+      }
+
+      uploadedFiles = Array.from(new Set(uploadedFiles.map((file) => getUploadedFileName(file))));
+
       const results: { row: number; name: string; ok: boolean; error?: string }[] = [];
+      let processedRowCount = 0;
 
       // 支持中文列头和英文列头的字段映射
       const fieldMap: Record<string, string> = {
         "名称": "name", "name": "name",
         "简介": "description", "description": "description",
         "链接": "url", "url": "url",
-        "Logo图片名": "logoFileName", "logoFileName": "logoFileName",
-        "主分类": "categoryName", "categoryName": "categoryName",
-        "子分类": "subCategoryName", "subCategoryName": "subCategoryName",
+        "logo图片名": "logoFileName", "logofilename": "logoFileName",
+        "主分类": "categoryName", "categoryname": "categoryName",
+        "子分类": "subCategoryName", "subcategoryname": "subCategoryName",
         "标签": "tags", "tags": "tags",
       };
 
@@ -529,9 +604,12 @@ async function startServer() {
         // 将中文/英文列头统一映射
         const row: Record<string, string> = {};
         for (const [key, value] of Object.entries(rawRow)) {
-          const mapped = fieldMap[key.trim()];
+          const mapped = fieldMap[normalizeImportHeader(key)];
           if (mapped) row[mapped] = String(value || "").trim();
         }
+
+        if (!Object.values(row).some((value) => value)) continue;
+        processedRowCount += 1;
 
         const name = xss(row.name || "");
         const description = xss(row.description || "");
@@ -542,6 +620,11 @@ async function startServer() {
 
         if (!name || !url) {
           results.push({ row: rowNum, name: name || "(空)", ok: false, error: "名称和链接为必填项" });
+          continue;
+        }
+
+        if (!categoryName) {
+          results.push({ row: rowNum, name, ok: false, error: "主分类为必填项" });
           continue;
         }
 
@@ -566,22 +649,12 @@ async function startServer() {
           if (logoFileName.startsWith("http://") || logoFileName.startsWith("https://")) {
             logo = logoFileName;
           } else {
-            // 按名称匹配（不要求后缀）：在uploads目录中查找文件名（不含后缀）匹配的文件
-            const matchedFile = uploadedFiles.find(f => {
-              const nameWithoutExt = path.basename(f, path.extname(f));
-              return nameWithoutExt === logoFileName || f === logoFileName;
-            });
-            if (matchedFile) {
-              if (ossPrefix) {
-                logo = ossPrefix + matchedFile;
-              } else {
-                logo = `/uploads/${matchedFile}`;
-              }
-            } else if (ossPrefix) {
-              logo = ossPrefix + logoFileName;
-            } else {
-              logo = `/uploads/${logoFileName}`;
+            const matchedFile = matchUploadedFile(uploadedFiles, logoFileName);
+            if (!matchedFile) {
+              results.push({ row: rowNum, name, ok: false, error: `未找到与 Logo图片名 "${logoFileName}" 对应的已上传图片` });
+              continue;
             }
+            logo = ossPrefix ? ossPrefix + matchedFile : `/uploads/${matchedFile}`;
           }
         }
 
@@ -603,9 +676,13 @@ async function startServer() {
         }
       }
 
+      if (!processedRowCount) {
+        return res.status(400).json({ error: "Excel 中没有有效数据行，请确认填写的是“工具导入模板”工作表" });
+      }
+
       const successCount = results.filter(r => r.ok).length;
       const failCount = results.filter(r => !r.ok).length;
-      res.json({ success: true, total: rows.length, successCount, failCount, details: results });
+      res.json({ success: true, total: processedRowCount, successCount, failCount, details: results });
     } catch (e) {
       console.error("批量导入失败:", e);
       res.status(500).json({ error: "Excel 解析失败，请检查文件格式" });
