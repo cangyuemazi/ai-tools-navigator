@@ -1,7 +1,6 @@
 import EditableLogoField from "@/components/EditableLogoField";
 import type { SiteSettings } from "@/lib/site-settings";
-// 👇 新增引入
-import MarkdownEditor from "@/components/MarkdownEditor";
+
 interface AdminSettingsProps {
   siteSettings: SiteSettings;
   setSiteSettings: (s: SiteSettings) => void;
@@ -50,33 +49,6 @@ export default function AdminSettings({ siteSettings, setSiteSettings, token, up
                 <textarea value={siteSettings.privacyText} onChange={e => setSiteSettings({...siteSettings, privacyText: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-[#0071e3]/30 rounded-[10px] outline-none min-h-[120px]" placeholder="在此粘贴隐私政策条款内容..." />
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-     {/* 独立的 Markdown 双屏编辑器区块 */}
-      <div className="mt-8 p-6 bg-[#f5f5f7] rounded-[16px] border border-[#e8e8ed]">
-        <h3 className="text-lg font-semibold text-[#1d1d1f] mb-2">关于我们 / 商务合作 (图文排版)</h3>
-        <p className="text-sm text-[#6e6e73] mb-6">
-          支持高级 Markdown 语法。<strong>您可以直接将本地图片拖拽到下方的编辑框中</strong>，系统会自动上传并生成排版。
-        </p>
-        
-        <div className="space-y-8">
-          <div>
-            <label className="block text-sm font-medium text-[#1d1d1f] mb-3">《关于我们》页面内容</label>
-            <MarkdownEditor 
-              value={siteSettings.aboutContent || ""} 
-              onChange={val => setSiteSettings({...siteSettings, aboutContent: val})} 
-              token={token} 
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-[#1d1d1f] mb-3">《商务合作》页面内容</label>
-            <MarkdownEditor 
-              value={siteSettings.partnersContent || ""} 
-              onChange={val => setSiteSettings({...siteSettings, partnersContent: val})} 
-              token={token} 
-            />
           </div>
         </div>
       </div>

@@ -3,18 +3,34 @@
  * Introduces the team, vision, and contact information.
  * Content is editable via admin settings (Markdown).
  */
-import remarkGfm from "remark-gfm"; // 引入 GFM 插件
-import rehypeRaw from "rehype-raw"; // 👇 新增这行解析 HTML 的插件
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Target, Users, Zap, Mail, Globe } from "lucide-react";
 import { fetchSiteSettings, getSiteName, readCachedSiteSettings } from "@/lib/site-settings";
 const ABOUT_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663305027998/HDfCavX5799Z5afQYedwzL/about-bg-8BTeZiLvbehD9zZefgNo7T.webp";
 
+/** 动态注入 Tailwind CDN，使后台编辑的任意 Tailwind 类名 HTML 能在前端正确渲染 */
+function useTailwindCDN(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return;
+    const id = 'tailwind-cdn-play';
+    if (document.getElementById(id)) return;
+    const script = document.createElement('script');
+    script.id = id;
+    script.src = 'https://cdn.tailwindcss.com';
+    script.async = true;
+    document.head.appendChild(script);
+  }, [enabled]);
+}
+
 export default function About() {
   const [siteSettings, setSiteSettings] = useState(() => readCachedSiteSettings());
   const [content, setContent] = useState<string | null>(siteSettings.aboutContent || null);
   const siteName = getSiteName(siteSettings);
+
+  useTailwindCDN(!!content);
 
   useEffect(() => {
     fetchSiteSettings()

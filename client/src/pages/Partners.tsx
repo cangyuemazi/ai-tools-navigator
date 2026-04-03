@@ -11,8 +11,24 @@ import { Megaphone, BarChart3, Star, Mail, MessageSquare } from "lucide-react";
 import { fetchSiteSettings, readCachedSiteSettings } from "@/lib/site-settings";
 const PARTNERS_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663305027998/HDfCavX5799Z5afQYedwzL/partners-bg-38coXdQr7ZvrTomhq4zwXn.webp";
 
+/** 动态注入 Tailwind CDN，使后台编辑的任意 Tailwind 类名 HTML 能在前端正确渲染 */
+function useTailwindCDN(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return;
+    const id = 'tailwind-cdn-play';
+    if (document.getElementById(id)) return;
+    const script = document.createElement('script');
+    script.id = id;
+    script.src = 'https://cdn.tailwindcss.com';
+    script.async = true;
+    document.head.appendChild(script);
+  }, [enabled]);
+}
+
 export default function Partners() {
   const [content, setContent] = useState<string | null>(() => readCachedSiteSettings().partnersContent || null);
+
+  useTailwindCDN(!!content);
 
   useEffect(() => {
     fetchSiteSettings()

@@ -7,7 +7,7 @@ import AdminPending from "./admin/AdminPending";
 import AdminSettings from "./admin/AdminSettings";
 import AdminCategories from "./admin/AdminCategories";
 import AdminTools from "./admin/AdminTools";
-import AdminContent from "./admin/AdminContent";
+import AdminPageEditor from "./admin/AdminPageEditor";
 import { cacheSiteSettings, fetchSiteSettings, getAdminDocumentTitle, readCachedSiteSettings, type SiteSettings } from "@/lib/site-settings";
 
 export default function Admin() {
@@ -164,7 +164,7 @@ export default function Admin() {
         <div className="flex gap-6 items-center whitespace-nowrap">
           <span className="font-semibold text-lg border-r pr-6 border-[#e8e8ed]">管理后台</span>
           <nav className="flex gap-2">
-            {[{ id: 'dashboard', icon: BarChart3, label: '数据概览' }, { id: 'pending', icon: ClipboardList, label: `审核中心 ${pendingTools.length > 0 ? `(${pendingTools.length})` : ''}` }, { id: 'tools', icon: Box, label: '工具管理' }, { id: 'categories', icon: LayoutGrid, label: '分类目录' }, { id: 'settings', icon: Settings, label: '全站高级设置' }, { id: 'content', icon: FileText, label: '其他内容修改' }].map(tab => (
+            {[{ id: 'dashboard', icon: BarChart3, label: '数据概览' }, { id: 'pending', icon: ClipboardList, label: `审核中心 ${pendingTools.length > 0 ? `(${pendingTools.length})` : ''}` }, { id: 'tools', icon: Box, label: '工具管理' }, { id: 'categories', icon: LayoutGrid, label: '分类目录' }, { id: 'settings', icon: Settings, label: '全站高级设置' }, { id: 'content', icon: FileText, label: '页面编辑' }].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-3 py-1.5 rounded-[8px] text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-[#0071e3]/10 text-[#0071e3]' : 'text-[#6e6e73] hover:bg-[#f5f5f7]'}`}><tab.icon className="w-4 h-4" /> {tab.label}</button>
             ))}
           </nav>
@@ -178,7 +178,7 @@ export default function Admin() {
         {activeTab === "settings" && <AdminSettings siteSettings={siteSettings} setSiteSettings={setSiteSettings} token={token} uploading={uploading} siteLogoDirty={siteLogoDirty} setSiteLogoDirty={setSiteLogoDirty} onSave={handleSaveSettings} onFileUpload={handleFileUpload} />}
         {activeTab === "categories" && <AdminCategories categories={categories} onOpenCatModal={openCatModal} onDelete={handleDelete} onMoveCategory={moveCategory} />}
         {activeTab === "tools" && <AdminTools tools={tools} categories={categories} token={token} onOpenToolModal={openToolModal} onDelete={handleDelete} fetchData={fetchData} />}
-        {activeTab === "content" && <AdminContent siteSettings={siteSettings} setSiteSettings={setSiteSettings} onSave={handleSaveSettings} />}
+        {activeTab === "content" && <AdminPageEditor siteSettings={siteSettings} setSiteSettings={setSiteSettings} token={token} onSave={handleSaveSettings} />}
       </main>
 
       {isCatModalOpen && (<div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center"><div className="bg-white p-6 rounded-[20px] w-[400px]"><h2 className="text-xl font-semibold mb-4">{editingCat ? "编辑分类" : "新增分类"}</h2><div className="space-y-4"><div><label className="block text-sm text-[#6e6e73] mb-1">分类名称</label><input type="text" value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} className="w-full px-3 py-2 border rounded-[8px]" /></div>{!catForm.parentId && <div><label className="block text-sm text-[#6e6e73] mb-1">图标</label><input type="text" value={catForm.icon} onChange={e => setCatForm({...catForm, icon: e.target.value})} className="w-full px-3 py-2 border rounded-[8px]" /></div>}</div><div className="mt-6 flex justify-end gap-3"><button onClick={() => setIsCatModalOpen(false)} className="px-4 py-2 bg-[#f5f5f7] rounded-[8px]">取消</button><button onClick={handleSaveCat} className="px-4 py-2 bg-[#0071e3] text-white rounded-[8px]">保存</button></div></div></div>)}
