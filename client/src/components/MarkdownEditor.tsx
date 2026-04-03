@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import { useCallback, useEffect } from 'react';
 import { MdEditor } from 'md-editor-rt';
 import 'md-editor-rt/lib/style.css';
@@ -80,7 +81,7 @@ export default function MarkdownEditor({
         language="zh-CN"
         style={{ height: `${height}px` }}
         // 关闭 HTML 消毒，允许带 Tailwind/style 的原生 HTML 在预览区完整渲染
-        sanitize={(html: string) => html}
+        sanitize={(html: string) => DOMPurify.sanitize(html, { ADD_TAGS: ['style'] })}
         // 关闭不需要的重量级子功能，提升加载速度
         noKatex
         noMermaid

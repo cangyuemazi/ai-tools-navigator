@@ -143,6 +143,7 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
   const [categories, setCategories] = useState<Category[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [activeSubTabs, setActiveSubTabs] = useState<Record<string, string | null>>({});
 
@@ -163,6 +164,7 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
     })
     .catch(err => {
       console.error("连接数据库失败:", err);
+      setLoadError("数据加载失败，请刷新页面重试");
       setLoading(false);
     });
   }, []);
@@ -309,12 +311,17 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
         )}
 
         {/* 内容区 */}
-        {loading ? (
+        {loadError ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[20px] border border-red-100">
+            <p className="text-[15px] text-red-500 font-medium mb-4">{loadError}</p>
+            <button onClick={() => window.location.reload()} className="px-5 py-2 bg-[#0071e3] text-white rounded-[10px] text-[14px] font-medium hover:bg-[#0077ED] transition-colors">刷新页面</button>
+          </div>
+        ) : loading ? (
           <ToolGrid tools={[]} categories={categories} selectedCategoryId={null} isLoading={true} />
         ) : mode === "all-tools" ? (
-          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={null} isLoading={false} isAllToolsView={isAllToolsView} />
+          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={null} isLoading={false} isAllToolsView={isAllToolsView} searchQuery={searchQuery} />
         ) : searchQuery ? (
-          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={selectedCategoryId} isLoading={false} isAllToolsView={isAllToolsView} />
+          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={selectedCategoryId} isLoading={false} isAllToolsView={isAllToolsView} searchQuery={searchQuery} />
         ) : (
           categories.map(cat => {
             const catTools = toolsByCategory.get(cat.id);

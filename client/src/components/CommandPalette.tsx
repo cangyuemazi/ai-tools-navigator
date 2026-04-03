@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ExternalLink } from "lucide-react";
 import PinyinMatch from "pinyin-match";
+import { useDebounce } from "@/hooks/useDebounce";
 import type { Tool } from "@/types";
 
 export default function CommandPalette() {
@@ -45,16 +46,18 @@ export default function CommandPalette() {
     };
   }, [open]);
 
+  const debouncedQuery = useDebounce(query, 200);
+
   // Filter with pinyin support
-  const filteredTools = query.trim()
+  const filteredTools = useMemo(() => debouncedQuery.trim()
     ? tools.filter(t => {
-        const q = query.toLowerCase();
+        const q = debouncedQuery.toLowerCase();
         if (t.name.toLowerCase().includes(q)) return true;
         if (t.description.toLowerCase().includes(q)) return true;
-        if (PinyinMatch.match(t.name, query)) return true;
+        if (PinyinMatch.match(t.name, debouncedQuery)) return true;
         return false;
       })
-    : tools.slice(0, 20);
+    : tools.slice(0, 20), [debouncedQuery, tools]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback(
@@ -178,7 +181,7 @@ export default function CommandPalette() {
               {/* Footer hint */}
               <div className="flex items-center justify-between px-5 py-3 border-t border-[#e8e8ed] text-[12px] text-[#86868b]">
                 <span>
-                  {query ? `找到 ${filteredTools.length} 个工具` : `共 ${tools.length} 个工具`}
+                  {debouncedQuery ? `找到 ${filteredTools.length} 个工具${filteredTools.length > 30 ? "（显示前 30 个）" : ""}` : `共 ${tools.length} 个工具`}
                 </span>
                 <div className="hidden sm:flex items-center gap-2">
                   <kbd className="px-1.5 py-0.5 bg-[#f5f5f7] rounded border border-[#e8e8ed]">

@@ -17,6 +17,20 @@ export interface Category {
   children: SubCategory[];
 }
 
+/** 待审核工具 */
+export interface PendingTool {
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  logo: string | null;
+  contactInfo: string | null;
+  categoryId: string | null;
+  subCategoryId: string | null;
+  status: string;
+  createdAt: string;
+}
+
 /** AI 工具信息 */
 export interface Tool {
   id: string;
@@ -29,5 +43,7 @@ export interface Tool {
   tags: string[];
   views: number;
   isSponsored?: boolean;
+  sponsorExpiry?: string | null;
   order?: number;
+  createdAt?: string;
 }

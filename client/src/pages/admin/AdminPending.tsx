@@ -1,14 +1,16 @@
+import type { Category, PendingTool } from "@/types";
+
 interface AdminPendingProps {
-  pendingTools: any[];
-  categories: any[];
-  onApprove: (pending: any) => void;
+  pendingTools: PendingTool[];
+  categories: Category[];
+  onApprove: (pending: PendingTool) => void;
   onDelete: (type: string, id: string) => void;
 }
 
 export default function AdminPending({ pendingTools, categories, onApprove, onDelete }: AdminPendingProps) {
-  const getPendingCategoryLabel = (pending: any) => {
-    const parentCategory = categories.find((category: any) => category.id === pending.categoryId);
-    const subCategory = parentCategory?.children?.find((child: any) => child.id === pending.subCategoryId);
+  const getPendingCategoryLabel = (pending: PendingTool) => {
+    const parentCategory = categories.find((category) => category.id === pending.categoryId);
+    const subCategory = parentCategory?.children?.find((child) => child.id === pending.subCategoryId);
     if (parentCategory && subCategory) return `${parentCategory.name} / ${subCategory.name}`;
     return parentCategory?.name || "未选择";
   };

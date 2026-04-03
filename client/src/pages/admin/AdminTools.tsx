@@ -1,11 +1,12 @@
 import { useState, useMemo, useRef } from "react";
 import { Plus, CheckCircle2, Download, Upload, ImagePlus } from "lucide-react";
+import type { Tool, Category } from "@/types";
 
 interface AdminToolsProps {
-  tools: any[];
-  categories: any[];
+  tools: Tool[];
+  categories: Category[];
   token: string;
-  onOpenToolModal: (tool?: any) => void;
+  onOpenToolModal: (tool?: Tool) => void;
   onDelete: (type: string, id: string) => void;
   fetchData: () => void;
 }

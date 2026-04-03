@@ -10,6 +10,7 @@ interface ToolGridProps {
   selectedCategoryId: string | null;
   isLoading?: boolean;
   isAllToolsView?: boolean;
+  searchQuery?: string;
 }
 
 // 👇 新增：骨架屏卡片组件，完全复刻了你真实卡片的尺寸和阴影
@@ -30,7 +31,7 @@ function ToolCardSkeleton() {
   );
 }
 
-function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, isAllToolsView = false }: ToolGridProps) {
+function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, isAllToolsView = false, searchQuery = "" }: ToolGridProps) {
   const [cols, setCols] = useState(5);
 
   useEffect(() => {
@@ -104,8 +105,8 @@ function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, is
       ) : (
         <div className="flex flex-col items-center justify-center py-32 text-[#86868b] bg-white rounded-[24px] border border-[#e8e8ed] shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
           <PackageOpen className="w-16 h-16 mb-6 text-[#d2d2d7] stroke-[1.5]" />
-          <p className="text-[17px] font-medium text-[#1d1d1f]">这里还是空的</p>
-          <p className="text-[14px] mt-2 text-[#86868b]">该分类下暂未收录工具，敬请期待</p>
+          <p className="text-[17px] font-medium text-[#1d1d1f]">{searchQuery ? "未找到匹配结果" : "这里还是空的"}</p>
+          <p className="text-[14px] mt-2 text-[#86868b]">{searchQuery ? "请尝试其他搜索关键词" : "该分类下暂未收录工具，敬请期待"}</p>
         </div>
       )}
     </div>

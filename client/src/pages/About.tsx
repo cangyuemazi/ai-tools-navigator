@@ -3,6 +3,7 @@
  * Introduces the team, vision, and contact information.
  * Content is editable via admin settings (Markdown).
  */
+import DOMPurify from "dompurify";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useEffect, useState } from "react";
@@ -45,7 +46,7 @@ export default function About() {
         <div className="prose prose-gray max-w-none prose-headings:text-gray-900 prose-a:text-[#0071e3] prose-img:rounded-xl">
           {/* 👇 加上 rehypePlugins={[rehypeRaw]} 就能完美渲染各种华丽的样式了 */}
           <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-            {content}
+            {DOMPurify.sanitize(content, { ADD_TAGS: ['style'] })}
           </ReactMarkdown>
         </div>
       </div>

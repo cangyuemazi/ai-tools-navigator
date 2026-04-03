@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { useLocation } from "wouter";
 import AppShell from "./components/AppShell";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const Admin = lazy(() => import("./pages/Admin"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -16,9 +17,11 @@ export default function App() {
   const [location] = useLocation();
   const path = location.split("?")[0];
 
-  if (path === "/admin") return <Suspense fallback={<PageLoading />}><Admin /></Suspense>;
-  if (path === "/terms") return <Suspense fallback={<PageLoading />}><Terms /></Suspense>;
-  if (path === "/privacy") return <Suspense fallback={<PageLoading />}><Privacy /></Suspense>;
+  let content;
+  if (path === "/admin") content = <Suspense fallback={<PageLoading />}><Admin /></Suspense>;
+  else if (path === "/terms") content = <Suspense fallback={<PageLoading />}><Terms /></Suspense>;
+  else if (path === "/privacy") content = <Suspense fallback={<PageLoading />}><Privacy /></Suspense>;
+  else content = <AppShell />;
 
-  return <AppShell />;
+  return <ErrorBoundary>{content}</ErrorBoundary>;
 }

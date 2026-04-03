@@ -27,6 +27,7 @@ model Tool {
   @@index([categoryId])
   @@index([subCategoryId])
   @@index([isSponsored, order, views])
+  @@index([createdAt])
 }
 
 // 分类表
@@ -52,6 +53,9 @@ model PendingTool {
   subCategoryId String?
   status      String   @default("pending") // pending, approved, rejected
   createdAt   DateTime @default(now())
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 // 网站全局设置表

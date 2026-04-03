@@ -13,6 +13,7 @@ import jwt from "jsonwebtoken";
 import OSS from "ali-oss"; // 👈 新增：引入阿里云 OSS
 import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
+import compression from "compression";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,21 +112,26 @@ async function startServer() {
   app.set("trust proxy", 1);
   const server = createServer(app);
 
+  const isProd = process.env.NODE_ENV === "production";
   app.use(helmet({ 
     crossOriginResourcePolicy: false,
     crossOriginEmbedderPolicy: false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        scriptSrc: isProd ? ["'self'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
         fontSrc: ["'self'", "data:"],
         connectSrc: ["'self'"],
+        frameAncestors: ["'self'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
       },
     }
   }));
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
+  app.use(compression());
 
   const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
@@ -154,15 +160,17 @@ async function startServer() {
     const client = getOssClient();
 
     if (client) {
-      const result = await client.put(`${UPLOADS_PREFIX}${filename}`, file.buffer);
-      // 强制返回 HTTPS 链接
-      return result.url.replace('http://', 'https://');
-    } else {
-      // 没配置 OSS 时，自动退回本地存储模式
-      const localPath = path.join(uploadDir, filename);
-      fs.writeFileSync(localPath, file.buffer);
-      return `/uploads/${filename}`;
+      try {
+        const result = await client.put(`${UPLOADS_PREFIX}${filename}`, file.buffer);
+        return result.url.replace('http://', 'https://');
+      } catch (ossError) {
+        console.error("OSS upload failed, falling back to local storage:", ossError);
+      }
     }
+    // 没配置 OSS 或 OSS 上传失败时，退回本地存储模式
+    const localPath = path.join(uploadDir, filename);
+    fs.writeFileSync(localPath, file.buffer);
+    return `/uploads/${filename}`;
   };
 
   app.get("/api/settings", async (req, res) => {
@@ -206,6 +214,27 @@ async function startServer() {
 
   const ALLOWED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon"]);
 
+  /** 校验文件魔术字节，防止伪造 MIME 类型上传恶意文件 */
+  const validateImageMagicBytes = (buffer: Buffer, mimetype: string): boolean => {
+    if (buffer.length < 4) return false;
+    const b = buffer;
+    if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return true;
+    if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) return true;
+    if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return true;
+    if (buffer.length >= 12 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return true;
+    if (b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x01 && b[3] === 0x00) return true;
+    if (mimetype === 'image/svg+xml') {
+      const head = buffer.toString('utf8', 0, Math.min(buffer.length, 1024));
+      return head.includes('<svg') || head.includes('<?xml');
+    }
+    return false;
+  };
+
+  /** 校验 URL 必须使用 http/https 协议 */
+  const validateUrlProtocol = (url: string): boolean => {
+    try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; }
+  };
+
   const uploadPublicLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 20,
@@ -217,6 +246,9 @@ async function startServer() {
     if (!req.file) return res.status(400).json({ error: "未检测到文件" });
     if (!ALLOWED_IMAGE_MIMES.has(req.file.mimetype)) {
       return res.status(400).json({ error: "仅允许上传图片文件 (jpg/png/gif/webp/svg/ico)" });
+    }
+    if (!validateImageMagicBytes(req.file.buffer, req.file.mimetype)) {
+      return res.status(400).json({ error: "文件内容与声明的类型不匹配" });
     }
     try {
       const url = await uploadToStorage(req.file);
@@ -245,6 +277,9 @@ async function startServer() {
 
       if (!name || !description || !url || !logo || !categoryId) {
         return res.status(400).json({ error: "Logo、工具名称、简介、官网链接和分类必填" });
+      }
+      if (!validateUrlProtocol(url)) {
+        return res.status(400).json({ error: "链接必须以 http:// 或 https:// 开头" });
       }
       const pending = await prisma.pendingTool.create({
         data: { name, description, url, contactInfo, logo, categoryId, subCategoryId: subCategoryId || null, status: "pending" }
@@ -280,8 +315,16 @@ async function startServer() {
     return stringValue ? stringValue : null;
   };
 
-  app.post("/api/admin/login", (req, res) => {
-    if (req.body.password === ADMIN_PASS) {
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: "登录尝试次数过多，请 15 分钟后再试" }
+  });
+  app.post("/api/admin/login", loginLimiter, (req, res) => {
+    const inputPassword = typeof req.body.password === 'string' ? req.body.password : '';
+    const inputHash = crypto.createHash('sha256').update(inputPassword).digest();
+    const passHash = crypto.createHash('sha256').update(ADMIN_PASS).digest();
+    if (crypto.timingSafeEqual(inputHash, passHash)) {
       const token = jwt.sign({ role: "admin" }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
       res.json({ success: true, token });
     } else {
@@ -294,6 +337,9 @@ async function startServer() {
     if (!req.file) return res.status(400).json({ error: "未检测到文件" });
     if (!ALLOWED_IMAGE_MIMES.has(req.file.mimetype)) {
       return res.status(400).json({ error: "仅允许上传图片文件" });
+    }
+    if (!validateImageMagicBytes(req.file.buffer, req.file.mimetype)) {
+      return res.status(400).json({ error: "文件内容与声明的类型不匹配" });
     }
     try {
       const url = await uploadToStorage(req.file);
@@ -315,6 +361,10 @@ async function startServer() {
       const originalName = fixOriginalName(file.originalname);
       if (!ALLOWED_IMAGE_MIMES.has(file.mimetype)) {
         results.push({ originalName, error: "不支持的图片格式" });
+        continue;
+      }
+      if (!validateImageMagicBytes(file.buffer, file.mimetype)) {
+        results.push({ originalName, error: "文件内容与声明的类型不匹配" });
         continue;
       }
       try {
@@ -353,10 +403,11 @@ async function startServer() {
       const icp = xss(req.body.icp || "");
       const email = xss(req.body.email || "");
       const customerServiceQrCode = req.body.customerServiceQrCode || "";
-      const termsText = typeof req.body.termsText === "string" ? req.body.termsText : "";
-      const privacyText = typeof req.body.privacyText === "string" ? req.body.privacyText : "";
-      const aboutContent = typeof req.body.aboutContent === "string" ? req.body.aboutContent : "";
-      const partnersContent = typeof req.body.partnersContent === "string" ? req.body.partnersContent : "";
+      const MAX_LONG_TEXT = 500000;
+      const termsText = typeof req.body.termsText === "string" ? req.body.termsText.slice(0, MAX_LONG_TEXT) : "";
+      const privacyText = typeof req.body.privacyText === "string" ? req.body.privacyText.slice(0, MAX_LONG_TEXT) : "";
+      const aboutContent = typeof req.body.aboutContent === "string" ? req.body.aboutContent.slice(0, MAX_LONG_TEXT) : "";
+      const partnersContent = typeof req.body.partnersContent === "string" ? req.body.partnersContent.slice(0, MAX_LONG_TEXT) : "";
       res.json(await prisma.siteSetting.upsert({ 
         where: { id: "default" }, 
         update: { name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText, aboutContent, partnersContent }, 
@@ -623,6 +674,11 @@ async function startServer() {
           continue;
         }
 
+        if (!validateUrlProtocol(url)) {
+          results.push({ row: rowNum, name, ok: false, error: "链接必须以 http:// 或 https:// 开头" });
+          continue;
+        }
+
         if (!categoryName) {
           results.push({ row: rowNum, name, ok: false, error: "主分类为必填项" });
           continue;
@@ -697,10 +753,14 @@ async function startServer() {
   });
   app.post("/api/admin/tools", requireAuth, async (req, res) => {
     try {
+      const toolUrl = xss(req.body.url || "");
+      if (toolUrl && !validateUrlProtocol(toolUrl)) {
+        return res.status(400).json({ error: "链接必须以 http:// 或 https:// 开头" });
+      }
       const data = {
         name: xss(req.body.name || ""),
         description: xss(req.body.description || ""),
-        url: xss(req.body.url || ""),
+        url: toolUrl,
         logo: req.body.logo || "",
         categoryId: req.body.categoryId,
         subCategoryId: req.body.subCategoryId || null,
@@ -714,10 +774,14 @@ async function startServer() {
   });
   app.put("/api/admin/tools/:id", requireAuth, async (req, res) => {
     try {
+      const toolUrl = xss(req.body.url || "");
+      if (toolUrl && !validateUrlProtocol(toolUrl)) {
+        return res.status(400).json({ error: "链接必须以 http:// 或 https:// 开头" });
+      }
       const data = {
         name: xss(req.body.name || ""),
         description: xss(req.body.description || ""),
-        url: xss(req.body.url || ""),
+        url: toolUrl,
         logo: req.body.logo || "",
         categoryId: req.body.categoryId,
         subCategoryId: req.body.subCategoryId || null,
@@ -775,6 +839,15 @@ async function startServer() {
   const port = process.env.PORT || 3001;
   server.listen(port, () => console.log(`🚀 后端已启动: http://localhost:${port}/`));
 }
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
 
 startServer().catch(async (e) => {
   console.error(e);

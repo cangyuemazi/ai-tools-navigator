@@ -26,5 +26,14 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-editor': ['md-editor-rt'],
+          'vendor-motion': ['framer-motion'],
+          'vendor-recharts': ['recharts'],
+        }
+      }
+    }
   }
 });

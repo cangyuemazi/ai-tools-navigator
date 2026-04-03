@@ -64,19 +64,27 @@ export default function Submit() {
 
     setSubmitting(true);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       const response = await fetch("/api/submit-tool", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       const data = await response.json();
       if (data.error) {
         setError(data.error);
       } else {
         setSubmitted(true);
       }
-    } catch {
-      setError("网络异常，提交失败，请稍后再试");
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError("请求超时，请检查网络后重试");
+      } else {
+        setError("网络异常，提交失败，请稍后再试");
+      }
     }
     setSubmitting(false);
   };

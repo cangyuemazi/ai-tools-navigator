@@ -3,6 +3,7 @@
  * Business cooperation and advertising information.
  * Content is editable via admin settings (Markdown).
  */
+import DOMPurify from "dompurify";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useEffect, useState } from "react";
@@ -42,7 +43,7 @@ export default function Partners() {
       <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="prose prose-gray max-w-none prose-headings:text-gray-900 prose-a:text-[#0071e3] prose-img:rounded-xl">
           <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-            {content}
+            {DOMPurify.sanitize(content, { ADD_TAGS: ['style'] })}
           </ReactMarkdown>
         </div>
       </div>

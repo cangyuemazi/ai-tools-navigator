@@ -1,23 +1,24 @@
 import { useMemo } from "react";
 import { Box, ClipboardList, TrendingUp, Calendar, Eye } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import type { Tool, Category, PendingTool } from "@/types";
 
 interface AdminDashboardProps {
-  tools: any[];
-  categories: any[];
-  pendingTools: any[];
+  tools: Tool[];
+  categories: Category[];
+  pendingTools: PendingTool[];
 }
 
 export default function AdminDashboard({ tools, categories, pendingTools }: AdminDashboardProps) {
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const thisWeekCount = tools.filter(t => new Date(t.createdAt) >= weekAgo).length;
-  const thisMonthCount = tools.filter(t => new Date(t.createdAt) >= monthAgo).length;
+  const thisWeekCount = tools.filter(t => t.createdAt && new Date(t.createdAt) >= weekAgo).length;
+  const thisMonthCount = tools.filter(t => t.createdAt && new Date(t.createdAt) >= monthAgo).length;
 
   const categoryDistribution = useMemo(() => categories.filter(c => !c.parentId).map(cat => ({
     name: cat.name.replace(/^AI/, '').replace(/工具$/, ''),
-    count: tools.filter(t => t.categoryId === cat.id || cat.children?.some((s: any) => s.id === t.subCategoryId)).length
+    count: tools.filter(t => t.categoryId === cat.id || cat.children?.some((s) => s.id === t.subCategoryId)).length
   })).filter(d => d.count > 0), [tools, categories]);
 
   const hotTools = useMemo(() => [...tools].sort((a, b) => b.views - a.views).slice(0, 10), [tools]);
