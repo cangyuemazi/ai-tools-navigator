@@ -25,11 +25,12 @@ export default function Layout({ children, selectedCategoryId = null, onSelectCa
 
   const handleSelectCategory = (c: string | null, s?: string | null) => { if (onSelectCategory) onSelectCategory(c, s); setMobileOpen(false); };
 
-  // Task 3: Scroll to top on route or category change
+  // Scroll to top only when the route path changes (not on category/query changes)
+  const locationPath = location.split("?")[0];
   useEffect(() => {
     const el = mainScrollRef.current;
     if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [location, selectedCategoryId]);
+  }, [locationPath]);
 
   const handleNavigateHome = () => {
     if (onNavigateHome) {

@@ -220,14 +220,37 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
     return map;
   }, [tools, categories]);
 
+  const isProgrammaticScrollRef = useRef(false);
+  const programmaticScrollTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
   const scrollToCategory = useCallback((categoryId: string, subCategoryId?: string) => {
     if (subCategoryId) {
       setActiveSubTabs(prev => ({ ...prev, [categoryId]: subCategoryId }));
     }
-    setTimeout(() => {
-      const section = document.getElementById(`category-${categoryId}`);
-      if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
+
+    const container = document.getElementById('main-scroll-container');
+    const section = document.getElementById(`category-${categoryId}`);
+    if (!section || !container) return;
+
+    // Check if the section header is already near the top of the viewport
+    const containerRect = container.getBoundingClientRect();
+    const sectionRect = section.getBoundingClientRect();
+    const isInView = sectionRect.top >= containerRect.top - 20 &&
+                     sectionRect.top <= containerRect.top + containerRect.height * 0.3;
+
+    // Switching subcategory tabs within an already-visible section: skip vertical scroll
+    if (subCategoryId && isInView) return;
+
+    // Suppress IntersectionObserver during programmatic scroll
+    isProgrammaticScrollRef.current = true;
+    if (programmaticScrollTimer.current) clearTimeout(programmaticScrollTimer.current);
+
+    requestAnimationFrame(() => {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      programmaticScrollTimer.current = setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 600);
+    });
   }, []);
 
   useEffect(() => {
@@ -271,6 +294,7 @@ export default function Home({ mode = "home", resetToken = 0, searchQuery = "", 
     if (!container) return;
     const observer = new IntersectionObserver(
       (entries) => {
+        if (isProgrammaticScrollRef.current) return;
         for (const entry of entries) {
           if (entry.isIntersecting) {
             setActiveSectionId(entry.target.id.replace('category-', ''));
