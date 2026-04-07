@@ -374,10 +374,22 @@ async function startServer() {
         const baseName = path.basename(originalName, ext);
         const safeBase = sanitizeUploadBaseName(baseName);
         const filename = `${safeBase}_${crypto.randomUUID().slice(0, 8)}${ext}`;
+        // 👇 核心修改点 1：对基础名进行 URI 编码转为纯 ASCII，彻底解决 Docker 下 OSS 的中文签名 Bug
+        const safeOssBase = encodeURIComponent(safeBase);
+        const ossFilename = `${safeOssBase}_${crypto.randomUUID().slice(0, 8)}${ext}`;
 
         if (client) {
-          const result = await client.put(`${UPLOADS_PREFIX}${filename}`, file.buffer);
-          results.push({ originalName, url: result.url.replace('http://', 'https://') });
+          try {
+            // 👇 核心修改点 2：发送给阿里云时，使用转码后的 ossFilename
+            const result = await client.put(`${UPLOADS_PREFIX}${ossFilename}`, file.buffer);
+            results.push({ originalName, url: result.url.replace('http://', 'https://') });
+          } catch (ossError) {
+            // 👇 核心修改点 3：增加容错，如果 OSS 依然失败，必须保底存到本地，防止后端崩溃
+            console.error(`OSS 批量上传文件 "${originalName}" 失败，退回本地存储:`, ossError);
+            const localPath = path.join(uploadDir, filename);
+            fs.writeFileSync(localPath, file.buffer);
+            results.push({ originalName, url: `/uploads/${filename}` });
+          }
         } else {
           const localPath = path.join(uploadDir, filename);
           fs.writeFileSync(localPath, file.buffer);
@@ -626,7 +638,14 @@ async function startServer() {
           do {
             const listResult = await ossClient.list({ prefix: UPLOADS_PREFIX, marker, "max-keys": 1000 }, {});
             const ossFiles = (listResult.objects || []).map((file) => file.name.startsWith(UPLOADS_PREFIX) ? file.name.slice(UPLOADS_PREFIX.length) : file.name);
-            uploadedFiles.push(...ossFiles);
+            
+            // 👇 核心修改点 4：将 OSS 中转码过的文件名解码回中文，确保后续你的 Excel 能完美通过中文原名匹配上
+            const decodedOssFiles = ossFiles.map(f => {
+              try { return decodeURIComponent(f); } catch { return f; }
+            });
+            uploadedFiles.push(...decodedOssFiles);
+            // 👆 修改结束
+
             marker = listResult.isTruncated ? listResult.nextMarker : undefined;
           } while (marker);
         } catch (error) {
