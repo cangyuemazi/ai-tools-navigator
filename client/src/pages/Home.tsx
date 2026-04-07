@@ -1,6 +1,4 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import { Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Box } from "lucide-react";
 import ToolGrid from "@/components/ToolGrid";
@@ -10,122 +8,6 @@ import type { Category, SubCategory, Tool } from "@/types";
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = { Flame, PenTool, Presentation, Image, Video, Briefcase, Code, Palette, Music, Sparkles, UserCheck, Languages, GraduationCap, Scale, ShoppingCart, TrendingUp, Megaphone, Brain, Box };
 
 type HomeMode = "home" | "all-tools";
-
-function getDescriptionSnippet(description: string, maxLength = 8) {
-  if (description.length <= maxLength) return description;
-  return `${description.slice(0, maxLength)}...`;
-}
-
-function SponsoredToolCard({ tool }: { tool: Tool }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [logoError, setLogoError] = useState(false);
-  const [popoverRect, setPopoverRect] = useState<{ top: number; left: number; width: number } | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  const updatePopoverRect = useCallback(() => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    setPopoverRect({
-      top: rect.bottom + 8,
-      left: rect.left,
-      width: rect.width,
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!isHovered) {
-      setPopoverRect(null);
-      return;
-    }
-
-    updatePopoverRect();
-
-    const handlePositionChange = () => updatePopoverRect();
-    const mainScrollContainer = document.getElementById("main-scroll-container");
-    const sponsorScrollRow = cardRef.current?.closest('[data-sponsored-scroll-row="true"]');
-
-    window.addEventListener("resize", handlePositionChange);
-    mainScrollContainer?.addEventListener("scroll", handlePositionChange, { passive: true });
-    sponsorScrollRow?.addEventListener("scroll", handlePositionChange, { passive: true });
-
-    return () => {
-      window.removeEventListener("resize", handlePositionChange);
-      mainScrollContainer?.removeEventListener("scroll", handlePositionChange);
-      sponsorScrollRow?.removeEventListener("scroll", handlePositionChange);
-    };
-  }, [isHovered, updatePopoverRect]);
-
-  return (
-    <div
-      ref={cardRef}
-      className={`snap-start shrink-0 w-[290px] sm:w-[320px] relative ${isHovered ? "z-50" : "z-10"}`}
-      onMouseEnter={() => {
-        updatePopoverRect();
-        setIsHovered(true);
-      }}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <a
-        href={tool.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block bg-white p-5 rounded-[20px] border border-[#0071e3]/20 shadow-[0_8px_20px_rgba(0,113,227,0.08)] hover:-translate-y-1.5 hover:shadow-[0_16px_32px_rgba(0,113,227,0.15)] transition-all duration-300 group relative overflow-hidden"
-      >
-        <div className="absolute top-0 right-0 bg-gradient-to-bl from-[#0071e3] to-[#42a1ff] text-white text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-bl-[14px] shadow-sm z-10">
-          SPONSORED
-        </div>
-
-        <div className="flex items-center gap-4">
-          {logoError ? (
-            <div className="w-[52px] h-[52px] rounded-[14px] bg-[#f5f5f7] border border-[#0071e3]/10 flex items-center justify-center shrink-0">
-              <span className="text-[20px] font-semibold text-[#86868b]">{tool.name.charAt(0)}</span>
-            </div>
-          ) : (
-            <img
-              src={tool.logo || undefined}
-              className="w-[52px] h-[52px] rounded-[14px] object-contain bg-[#f5f5f7] border border-[#0071e3]/10 shrink-0"
-              alt={tool.name}
-              onError={() => setLogoError(true)}
-            />
-          )}
-          <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-[#1d1d1f] text-[16px] line-clamp-1 group-hover:text-[#0071e3] transition-colors pr-12">
-              {tool.name}
-            </h3>
-            <p className="mt-1.5 text-[12px] text-[#6e6e73] leading-5 truncate pr-12">
-              {getDescriptionSnippet(tool.description)}
-            </p>
-          </div>
-        </div>
-      </a>
-
-      {typeof document !== "undefined" &&
-        createPortal(
-          <AnimatePresence>
-            {isHovered && popoverRect && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.18, ease: [0.2, 0.9, 0.4, 1] }}
-                className="fixed z-[120] pointer-events-none"
-                style={{
-                  top: popoverRect.top,
-                  left: popoverRect.left,
-                  width: popoverRect.width,
-                }}
-              >
-                <div className="bg-white/95 backdrop-blur-xl rounded-[14px] p-4 shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-[#e8e8ed]/80">
-                  <p className="text-[13px] leading-[1.6] text-[#4a4a4f]">{tool.description}</p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
-    </div>
-  );
-}
 
 interface HomeProps {
   mode?: HomeMode;
@@ -322,23 +204,23 @@ export default function Home({ mode = "home", categories: categoriesProp, resetT
   return (
     <div className="p-6 pb-24 md:p-10 md:pb-28 lg:p-12 lg:pb-32 max-w-[1600px] flex flex-col gap-8 mx-auto overflow-visible">
 
-        {/* 赞助商展位 */}
+        {/* 热门工具展位 */}
         {mode === "home" && sponsoredTools.length > 0 && !loading && !searchQuery && !selectedCategoryId && (
           <div className="mb-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between mb-5 pr-2">
               <div className="flex items-center gap-3">
                 <span className="text-[20px] font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#0071e3] to-[#42a1ff]">
-                  💎 赞助商强推
+                  🔥 热门工具
                 </span>
                 <span className="text-[13px] font-medium text-[#86868b] bg-white px-2 py-0.5 rounded-[6px] border border-[#e8e8ed]">
                   本周精选
                 </span>
               </div>
             </div>
-            
-            <div data-sponsored-scroll-row="true" className="flex gap-4 overflow-x-auto pt-2 pb-6 snap-x snap-mandatory items-start [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {sponsoredTools.map(tool => (
-                <SponsoredToolCard key={`sponsor-${tool.id}`} tool={tool} />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+              {sponsoredTools.map((tool, idx) => (
+                <ToolCard key={`hot-${tool.id}`} tool={tool} index={idx} showHotBadge />
               ))}
             </div>
           </div>

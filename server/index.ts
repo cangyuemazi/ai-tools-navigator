@@ -119,7 +119,7 @@ async function startServer() {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: isProd ? ["'self'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        scriptSrc: ["'self'", "https://cdn.tailwindcss.com", ...(isProd ? [] : ["'unsafe-inline'", "'unsafe-eval'"])],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
         fontSrc: ["'self'", "data:"],
@@ -384,7 +384,8 @@ async function startServer() {
           results.push({ originalName, url: `/uploads/${filename}` });
         }
       } catch (e) {
-        results.push({ originalName, error: "上传失败" });
+        console.error(`批量上传文件 "${originalName}" 失败:`, e);
+        results.push({ originalName, error: `上传失败: ${e instanceof Error ? e.message : String(e)}` });
       }
     }
 
@@ -407,8 +408,8 @@ async function startServer() {
       const MAX_LONG_TEXT = 500000;
       const termsText = xss(typeof req.body.termsText === "string" ? req.body.termsText.slice(0, MAX_LONG_TEXT) : "");
       const privacyText = xss(typeof req.body.privacyText === "string" ? req.body.privacyText.slice(0, MAX_LONG_TEXT) : "");
-      const aboutContent = xss(typeof req.body.aboutContent === "string" ? req.body.aboutContent.slice(0, MAX_LONG_TEXT) : "");
-      const partnersContent = xss(typeof req.body.partnersContent === "string" ? req.body.partnersContent.slice(0, MAX_LONG_TEXT) : "");
+      const aboutContent = typeof req.body.aboutContent === "string" ? req.body.aboutContent.slice(0, MAX_LONG_TEXT) : "";
+      const partnersContent = typeof req.body.partnersContent === "string" ? req.body.partnersContent.slice(0, MAX_LONG_TEXT) : "";
       res.json(await prisma.siteSetting.upsert({ 
         where: { id: "default" }, 
         update: { name, logo, favicon, titleFontSize, backgroundColor, companyIntro, icp, email, customerServiceQrCode, termsText, privacyText, aboutContent, partnersContent }, 

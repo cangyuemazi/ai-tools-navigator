@@ -7,6 +7,7 @@ interface ToolCardProps {
   tool: Tool;
   index: number;
   isAllToolsView?: boolean;
+  showHotBadge?: boolean;
 }
 
 function getDescriptionSnippet(description: string, maxLength = 8) {
@@ -14,7 +15,7 @@ function getDescriptionSnippet(description: string, maxLength = 8) {
   return `${description.slice(0, maxLength)}...`;
 }
 
-function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
+function ToolCard({ tool, index, isAllToolsView = false, showHotBadge = false }: ToolCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -49,27 +50,23 @@ function ToolCard({ tool, index, isAllToolsView = false }: ToolCardProps) {
           className={`
             bg-[#ffffff] rounded-[20px] p-4 transition-all duration-300 ease-[cubic-bezier(0.2,0.9,0.4,1.1)]
             border active:scale-[0.98] relative
-            ${tool.isSponsored ? "border-[#0071e3]/30" : "border-[#e8e8ed]"}
+            border-[#e8e8ed]
             ${isHovered
-              ? tool.isSponsored 
-                ? "shadow-[0_12px_28px_rgba(0,113,227,0.12)] -translate-y-1 border-[#0071e3]/50" 
-                : "shadow-[0_12px_28px_rgba(0,0,0,0.08)] -translate-y-1"
-              : tool.isSponsored
-                ? "shadow-[0_8px_20px_rgba(0,113,227,0.06),0_2px_4px_rgba(0,113,227,0.04)]"
-                : "shadow-[0_8px_20px_rgba(0,0,0,0.04),0_2px_4px_rgba(0,0,0,0.02)]"
+              ? "shadow-[0_12px_28px_rgba(0,0,0,0.08)] -translate-y-1"
+              : "shadow-[0_8px_20px_rgba(0,0,0,0.04),0_2px_4px_rgba(0,0,0,0.02)]"
             }
           `}
         >
-          {/* 付费高亮角标 */}
-          {tool.isSponsored && (
-            <div className="absolute top-0 right-0 bg-gradient-to-bl from-[#0071e3] to-[#42a1ff] text-white text-[10px] font-bold tracking-wider px-3 py-1 rounded-bl-[12px] rounded-tr-[19px] shadow-sm flex items-center gap-1 z-10">
+          {/* 热门高亮角标 */}
+          {showHotBadge && tool.isSponsored && (
+            <div className="absolute top-0 right-0 bg-gradient-to-bl from-[#ff6b35] to-[#ff9a56] text-white text-[10px] font-bold tracking-wider px-3 py-1 rounded-bl-[12px] rounded-tr-[19px] shadow-sm flex items-center gap-1 z-10">
               <Sparkles className="w-3 h-3" />
-              推荐
+              热门
             </div>
           )}
 
           <div className="flex items-start gap-4">
-            <div className={`w-[52px] h-[52px] mt-1 rounded-[14px] bg-[#f5f5f7] border flex items-center justify-center shrink-0 overflow-hidden shadow-[0_2px_4px_rgba(0,0,0,0.02)] ${tool.isSponsored ? "border-[#0071e3]/20" : "border-[#e8e8ed]"}`}>
+            <div className="w-[52px] h-[52px] mt-1 rounded-[14px] bg-[#f5f5f7] border border-[#e8e8ed] flex items-center justify-center shrink-0 overflow-hidden shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
               {logoError ? (
                 <span className="text-[20px] font-semibold text-[#86868b]">{tool.name.charAt(0)}</span>
               ) : (

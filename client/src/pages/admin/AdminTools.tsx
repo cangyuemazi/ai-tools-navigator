@@ -139,15 +139,15 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
           {categories.filter(c => !c.parentId).map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
         </select>
         <select value={filterSponsored} onChange={e => setFilterSponsored(e.target.value)} className="px-3 py-2 bg-white border border-[#d2d2d7] rounded-[10px] outline-none text-sm text-[#6e6e73]">
-          <option value="">赞助状态</option>
-          <option value="yes">仅赞助</option>
-          <option value="no">非赞助</option>
+          <option value="">热门状态</option>
+          <option value="yes">仅热门</option>
+          <option value="no">非热门</option>
         </select>
         {selectedToolIds.size > 0 && (
           <div className="flex gap-2 ml-auto items-center">
             <span className="text-sm text-[#86868b]">已选 {selectedToolIds.size} 项</span>
-            <button onClick={() => handleBatchSponsor(true)} className="px-3 py-1.5 bg-[#0071e3]/10 text-[#0071e3] rounded-[8px] text-sm font-medium hover:bg-[#0071e3]/20">设为赞助</button>
-            <button onClick={() => handleBatchSponsor(false)} className="px-3 py-1.5 bg-[#f5f5f7] text-[#6e6e73] rounded-[8px] text-sm font-medium hover:bg-[#e8e8ed]">取消赞助</button>
+            <button onClick={() => handleBatchSponsor(true)} className="px-3 py-1.5 bg-[#0071e3]/10 text-[#0071e3] rounded-[8px] text-sm font-medium hover:bg-[#0071e3]/20">设为热门</button>
+            <button onClick={() => handleBatchSponsor(false)} className="px-3 py-1.5 bg-[#f5f5f7] text-[#6e6e73] rounded-[8px] text-sm font-medium hover:bg-[#e8e8ed]">取消热门</button>
             <button onClick={handleBatchDelete} className="px-3 py-1.5 bg-red-50 text-red-500 rounded-[8px] text-sm font-medium hover:bg-red-100">批量删除</button>
           </div>
         )}
@@ -172,7 +172,7 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
               <th className="p-4 font-medium">排位分</th>
               <th className="p-4 font-medium">分类</th>
               <th className="p-4 font-medium">浏览量</th>
-              <th className="p-4 font-medium">赞助</th>
+              <th className="p-4 font-medium">热门</th>
               <th className="p-4 text-right">操作</th>
             </tr>
           </thead>
@@ -184,7 +184,7 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
                 <td className="p-4 font-bold text-[#0071e3]">{tool.order || 0}</td>
                 <td className="p-4 text-[#6e6e73]">{categories.find(c => c.id === tool.categoryId)?.name || '-'}</td>
                 <td className="p-4 text-[#86868b] tabular-nums">{(tool.views || 0).toLocaleString()}</td>
-                <td className="p-4">{tool.isSponsored ? <span className="text-[#0071e3] font-medium">是</span> : "否"}</td>
+                <td className="p-4">{tool.isSponsored ? <span className="text-[#ff6b35] font-medium">是</span> : "否"}</td>
                 <td className="p-4 text-right"><button onClick={() => onOpenToolModal(tool)} className="mr-3 text-[#0071e3] hover:underline">编辑</button><button onClick={() => onDelete("tools", tool.id)} className="text-red-500 hover:underline">删除</button></td>
               </tr>
             ))}
