@@ -98,6 +98,14 @@ export default function Home({ mode = "home", categories: categoriesProp, resetT
         (t) => t.name.toLowerCase().includes(query) || t.description.toLowerCase().includes(query)
       );
     }
+    // 👇 新增逻辑：在“全部工具”页面且未搜索时，将热门(isSponsored)工具置顶排布
+    if (mode === "all-tools" && !searchQuery.trim()) {
+      result = [...result].sort((a, b) => {
+        if (a.isSponsored && !b.isSponsored) return -1;
+        if (!a.isSponsored && b.isSponsored) return 1;
+        return 0;
+      });
+    }
     return result;
   }, [mode, selectedCategoryId, searchQuery, tools, categories]);
 
@@ -235,7 +243,8 @@ export default function Home({ mode = "home", categories: categoriesProp, resetT
         ) : loading ? (
           <ToolGrid tools={[]} categories={categories} selectedCategoryId={null} isLoading={true} />
         ) : mode === "all-tools" ? (
-          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={null} isLoading={false} isAllToolsView={isAllToolsView} searchQuery={searchQuery} />
+          <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={null} isLoading={false} isAllToolsView={isAllToolsView} searchQuery={searchQuery} showHotBadge={true} // 👇 新增这行，激活全部工具页面的热门角标
+          />
         ) : searchQuery ? (
           <ToolGrid tools={filteredTools} categories={categories} selectedCategoryId={selectedCategoryId} isLoading={false} isAllToolsView={isAllToolsView} searchQuery={searchQuery} />
         ) : (

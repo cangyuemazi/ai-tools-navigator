@@ -11,6 +11,7 @@ interface ToolGridProps {
   isLoading?: boolean;
   isAllToolsView?: boolean;
   searchQuery?: string;
+  showHotBadge?: boolean; // 👇 新增
 }
 
 // 👇 新增：骨架屏卡片组件，完全复刻了你真实卡片的尺寸和阴影
@@ -31,7 +32,8 @@ function ToolCardSkeleton() {
   );
 }
 
-function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, isAllToolsView = false, searchQuery = "" }: ToolGridProps) {
+//注意末尾添加了 showHotBadge = false
+function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, isAllToolsView = false, searchQuery = "", showHotBadge = false }: ToolGridProps) {
   const [cols, setCols] = useState(5);
 
   useEffect(() => {
@@ -97,7 +99,8 @@ function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, is
           {columnsData.map((col, colIndex) => (
             <div key={colIndex} className="flex-1 flex flex-col gap-6 min-w-0">
               {col.map((tool, index) => (
-                <ToolCard key={tool.id} tool={tool} index={index} isAllToolsView={isAllToolsView} />
+                <ToolCard key={tool.id} tool={tool} index={index} isAllToolsView={isAllToolsView} showHotBadge={showHotBadge} // 👇 将属性透传给卡片
+                />
               ))}
             </div>
           ))}
