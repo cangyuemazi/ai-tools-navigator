@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { Box, ClipboardList, TrendingUp, Calendar, Eye } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import type { Tool, Category, PendingTool } from "@/types";
@@ -9,19 +9,24 @@ interface AdminDashboardProps {
   pendingTools: PendingTool[];
 }
 
+const toolMatchesCategory = (tool: Tool, categoryId: string) => (
+  tool.categoryAssignments?.some((assignment) => assignment.categoryId === categoryId)
+  || tool.categoryId === categoryId
+);
+
 export default function AdminDashboard({ tools, categories, pendingTools }: AdminDashboardProps) {
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const thisWeekCount = tools.filter(t => t.createdAt && new Date(t.createdAt) >= weekAgo).length;
-  const thisMonthCount = tools.filter(t => t.createdAt && new Date(t.createdAt) >= monthAgo).length;
+  const thisWeekCount = tools.filter((tool) => tool.createdAt && new Date(tool.createdAt) >= weekAgo).length;
+  const thisMonthCount = tools.filter((tool) => tool.createdAt && new Date(tool.createdAt) >= monthAgo).length;
 
-  const categoryDistribution = useMemo(() => categories.filter(c => !c.parentId).map(cat => ({
-    name: cat.name.replace(/^AI/, '').replace(/工具$/, ''),
-    count: tools.filter(t => t.categoryId === cat.id || cat.children?.some((s) => s.id === t.subCategoryId)).length
-  })).filter(d => d.count > 0), [tools, categories]);
+  const categoryDistribution = useMemo(() => categories.map((category) => ({
+    name: category.name.replace(/^AI/, "").replace(/工具$/, ""),
+    count: tools.filter((tool) => toolMatchesCategory(tool, category.id)).length,
+  })).filter((item) => item.count > 0), [tools, categories]);
 
-  const hotTools = useMemo(() => [...tools].sort((a, b) => b.views - a.views).slice(0, 10), [tools]);
+  const hotTools = useMemo(() => [...tools].sort((left, right) => right.views - left.views).slice(0, 10), [tools]);
 
   const stats = [
     { label: "总工具数", value: tools.length, icon: Box, color: "bg-[#0071e3]" },
@@ -33,7 +38,7 @@ export default function AdminDashboard({ tools, categories, pendingTools }: Admi
   return (
     <div className="animate-in fade-in space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map(stat => (
+        {stats.map((stat) => (
           <div key={stat.label} className="bg-white rounded-[16px] p-5 border border-[#e8e8ed] shadow-sm">
             <div className="flex items-center gap-3 mb-3">
               <div className={`w-9 h-9 ${stat.color} rounded-[10px] flex items-center justify-center`}>
@@ -69,9 +74,9 @@ export default function AdminDashboard({ tools, categories, pendingTools }: Admi
             <Eye className="w-4 h-4 inline mr-2" />热门工具 TOP 10
           </h3>
           <div className="space-y-2">
-            {hotTools.map((tool, i) => (
+            {hotTools.map((tool, index) => (
               <div key={tool.id} className="flex items-center gap-3 px-3 py-2 rounded-[10px] hover:bg-[#f5f5f7] transition-colors">
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${i < 3 ? "bg-[#0071e3] text-white" : "bg-[#f5f5f7] text-[#86868b]"}`}>{i + 1}</span>
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${index < 3 ? "bg-[#0071e3] text-white" : "bg-[#f5f5f7] text-[#86868b]"}`}>{index + 1}</span>
                 <span className="flex-1 text-[14px] font-medium text-[#1d1d1f] truncate">{tool.name}</span>
                 <span className="text-[13px] text-[#86868b] tabular-nums">{tool.views.toLocaleString()} 次</span>
               </div>

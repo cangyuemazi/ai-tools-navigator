@@ -1,7 +1,7 @@
-import { useState, useEffect, memo } from "react";
+﻿import { useState, useEffect, memo } from "react";
 import { PackageOpen } from "lucide-react";
 import ToolCard from "./ToolCard";
-import { Skeleton } from "@/components/ui/skeleton"; // 👇 引入骨架屏组件
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Tool, Category } from "@/types";
 
 interface ToolGridProps {
@@ -11,10 +11,9 @@ interface ToolGridProps {
   isLoading?: boolean;
   isAllToolsView?: boolean;
   searchQuery?: string;
-  showHotBadge?: boolean; // 👇 新增
+  showHotBadge?: boolean;
 }
 
-// 👇 新增：骨架屏卡片组件，完全复刻了你真实卡片的尺寸和阴影
 function ToolCardSkeleton() {
   return (
     <div className="bg-white rounded-[20px] p-4 border border-[#e8e8ed] shadow-[0_8px_20px_rgba(0,0,0,0.04),0_2px_4px_rgba(0,0,0,0.02)]">
@@ -32,7 +31,6 @@ function ToolCardSkeleton() {
   );
 }
 
-//注意末尾添加了 showHotBadge = false
 function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, isAllToolsView = false, searchQuery = "", showHotBadge = false }: ToolGridProps) {
   const [cols, setCols] = useState(5);
 
@@ -44,23 +42,23 @@ function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, is
       else if (window.innerWidth >= 768) setCols(2);
       else setCols(1);
     };
+
     updateCols();
-    window.addEventListener('resize', updateCols);
-    return () => window.removeEventListener('resize', updateCols);
+    window.addEventListener("resize", updateCols);
+    return () => window.removeEventListener("resize", updateCols);
   }, []);
 
   const getCategoryName = () => {
     if (!selectedCategoryId) return "全部工具";
-    for (const cat of categories) {
-      if (cat.id === selectedCategoryId) return cat.name;
-      for (const sub of cat.children) {
-        if (sub.id === selectedCategoryId) return sub.name;
+    for (const category of categories) {
+      if (category.id === selectedCategoryId) return category.name;
+      for (const subCategory of category.children) {
+        if (subCategory.id === selectedCategoryId) return subCategory.name;
       }
     }
     return "全部工具";
   };
 
-  // 👇 核心视觉优化：如果正在加载，显示极其优雅的骨架屏阵列
   if (isLoading) {
     return (
       <div className="w-full">
@@ -71,10 +69,7 @@ function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, is
         <div className="flex gap-6 items-start">
           {Array.from({ length: cols }).map((_, colIndex) => (
             <div key={colIndex} className="flex-1 flex flex-col gap-6 min-w-0">
-              {/* 每列放 4 个骨架卡片作为占位 */}
-              {Array.from({ length: 4 }).map((_, i) => (
-                <ToolCardSkeleton key={i} />
-              ))}
+              {Array.from({ length: 4 }).map((__, index) => <ToolCardSkeleton key={index} />)}
             </div>
           ))}
         </div>
@@ -96,11 +91,10 @@ function ToolGrid({ tools, categories, selectedCategoryId, isLoading = false, is
 
       {tools.length > 0 ? (
         <div className="flex gap-6 items-start">
-          {columnsData.map((col, colIndex) => (
-            <div key={colIndex} className="flex-1 flex flex-col gap-6 min-w-0">
-              {col.map((tool, index) => (
-                <ToolCard key={tool.id} tool={tool} index={index} isAllToolsView={isAllToolsView} showHotBadge={showHotBadge} // 👇 将属性透传给卡片
-                />
+          {columnsData.map((column, columnIndex) => (
+            <div key={columnIndex} className="flex-1 flex flex-col gap-6 min-w-0">
+              {column.map((tool, index) => (
+                <ToolCard key={tool.id} tool={tool} index={index} isAllToolsView={isAllToolsView} showHotBadge={showHotBadge} />
               ))}
             </div>
           ))}

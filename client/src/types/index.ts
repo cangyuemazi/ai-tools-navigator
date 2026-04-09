@@ -31,6 +31,11 @@ export interface PendingTool {
   createdAt: string;
 }
 
+export interface ToolCategoryAssignment {
+  categoryId: string;
+  subCategoryId: string | null;
+}
+
 /** AI 工具信息 */
 export interface Tool {
   id: string;
@@ -40,6 +45,8 @@ export interface Tool {
   logo: string | null;
   categoryId: string;
   subCategoryId: string | null;
+  canonicalKey?: string | null;
+  categoryAssignments: ToolCategoryAssignment[];
   tags: string[];
   views: number;
   isSponsored?: boolean;

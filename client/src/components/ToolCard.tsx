@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, memo } from "react";
+import { useState, useRef, useCallback, memo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import type { Tool } from "@/types";
@@ -15,10 +15,23 @@ function getDescriptionSnippet(description: string, maxLength = 8) {
   return `${description.slice(0, maxLength)}...`;
 }
 
+function getFallbackLogoUrl(logo?: string | null) {
+  if (!logo) return null;
+
+  const fallbackLogo = logo.replace(/_([a-f0-9]{8})(\.[^.]+)$/i, "$2");
+  return fallbackLogo === logo ? null : fallbackLogo;
+}
+
 function ToolCard({ tool, index, isAllToolsView = false, showHotBadge = false }: ToolCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [logoSrc, setLogoSrc] = useState(tool.logo || "");
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setLogoSrc(tool.logo || "");
+    setLogoError(false);
+  }, [tool.logo]);
 
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
@@ -27,6 +40,16 @@ function ToolCard({ tool, index, isAllToolsView = false, showHotBadge = false }:
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
   }, []);
+
+  const handleLogoError = useCallback(() => {
+    const fallbackLogo = getFallbackLogoUrl(logoSrc);
+    if (fallbackLogo && fallbackLogo !== logoSrc) {
+      setLogoSrc(fallbackLogo);
+      return;
+    }
+
+    setLogoError(true);
+  }, [logoSrc]);
 
   const isTooltipMode = isHovered;
 
@@ -70,7 +93,7 @@ function ToolCard({ tool, index, isAllToolsView = false, showHotBadge = false }:
               {logoError ? (
                 <span className="text-[20px] font-semibold text-[#86868b]">{tool.name.charAt(0)}</span>
               ) : (
-                <img src={tool.logo || undefined} alt={tool.name} className="w-full h-full object-contain" onError={() => setLogoError(true)} loading="lazy" />
+                <img src={logoSrc || undefined} alt={tool.name} className="w-full h-full object-contain" onError={handleLogoError} loading="lazy" />
               )}
             </div>
 

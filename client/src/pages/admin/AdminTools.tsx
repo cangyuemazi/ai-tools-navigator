@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+﻿import { useState, useMemo, useRef } from "react";
 import { Plus, CheckCircle2, Download, Upload, ImagePlus } from "lucide-react";
 import type { Tool, Category } from "@/types";
 
@@ -11,6 +11,23 @@ interface AdminToolsProps {
   fetchData: () => void;
 }
 
+const toolMatchesCategory = (tool: Tool, categoryId: string) => (
+  tool.categoryAssignments?.some((assignment) => assignment.categoryId === categoryId)
+  || tool.categoryId === categoryId
+);
+
+const getCategoryLabels = (tool: Tool, categories: Category[]) => {
+  const assignments = tool.categoryAssignments?.length
+    ? tool.categoryAssignments
+    : [{ categoryId: tool.categoryId, subCategoryId: tool.subCategoryId }];
+
+  return assignments.map((assignment) => {
+    const mainCategory = categories.find((category) => category.id === assignment.categoryId);
+    const subCategory = mainCategory?.children?.find((child) => child.id === assignment.subCategoryId);
+    return subCategory ? `${mainCategory?.name || "-"} / ${subCategory.name}` : (mainCategory?.name || "-");
+  });
+};
+
 export default function AdminTools({ tools, categories, token, onOpenToolModal, onDelete, fetchData }: AdminToolsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(new Set());
@@ -18,64 +35,80 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
   const [filterSponsored, setFilterSponsored] = useState("");
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ total: number; successCount: number; failCount: number; details: { row: number; name: string; ok: boolean; error?: string }[] } | null>(null);
-  const importInputRef = useRef<HTMLInputElement>(null);
-  const batchImageInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [imageUploadResult, setImageUploadResult] = useState<{ total: number; successCount: number; failCount: number; results: { originalName: string; url?: string; error?: string }[] } | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const batchImageInputRef = useRef<HTMLInputElement>(null);
 
   const filteredToolsList = useMemo(() => {
     let result = tools;
-    if (filterCategory) result = result.filter(t => t.categoryId === filterCategory);
-    if (filterSponsored === "yes") result = result.filter(t => t.isSponsored);
-    if (filterSponsored === "no") result = result.filter(t => !t.isSponsored);
-    if (searchQuery.trim()) result = result.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (filterCategory) result = result.filter((tool) => toolMatchesCategory(tool, filterCategory));
+    if (filterSponsored === "yes") result = result.filter((tool) => tool.isSponsored);
+    if (filterSponsored === "no") result = result.filter((tool) => !tool.isSponsored);
+    if (searchQuery.trim()) result = result.filter((tool) => tool.name.toLowerCase().includes(searchQuery.toLowerCase()));
     return result;
   }, [tools, filterCategory, filterSponsored, searchQuery]);
 
   const toggleSelectAll = () => {
     if (selectedToolIds.size === filteredToolsList.length) setSelectedToolIds(new Set());
-    else setSelectedToolIds(new Set(filteredToolsList.map(t => t.id)));
+    else setSelectedToolIds(new Set(filteredToolsList.map((tool) => tool.id)));
   };
+
   const toggleSelectTool = (id: string) => {
-    setSelectedToolIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setSelectedToolIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
+
   const handleBatchDelete = async () => {
-    if (!confirm(`确定删除选中的 ${selectedToolIds.size} 个工具？不可恢复！`)) return;
-    for (const id of Array.from(selectedToolIds)) { await fetch(`/api/admin/tools/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }); }
-    setSelectedToolIds(new Set()); fetchData();
+    if (!confirm(`确定删除选中的 ${selectedToolIds.size} 个工具？不可恢复。`)) return;
+    for (const id of Array.from(selectedToolIds)) {
+      await fetch(`/api/admin/tools/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    }
+    setSelectedToolIds(new Set());
+    fetchData();
   };
+
   const handleBatchSponsor = async (sponsored: boolean) => {
     for (const id of Array.from(selectedToolIds)) {
-      const tool = tools.find(t => t.id === id);
+      const tool = tools.find((item) => item.id === id);
       if (!tool) continue;
-      await fetch(`/api/admin/tools/${id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ ...tool, tags: Array.isArray(tool.tags) ? tool.tags : [], isSponsored: sponsored }) });
+      await fetch(`/api/admin/tools/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...tool, tags: Array.isArray(tool.tags) ? tool.tags : [], isSponsored: sponsored }),
+      });
     }
-    setSelectedToolIds(new Set()); fetchData();
+    setSelectedToolIds(new Set());
+    fetchData();
   };
 
   const handleDownloadTemplate = () => {
     fetch("/api/admin/tools/template", { headers: { Authorization: `Bearer ${token}` } })
-      .then(async (r) => {
-        if (!r.ok) {
-          const data = await r.json().catch(() => null);
+      .then(async (response) => {
+        if (!response.ok) {
+          const data = await response.json().catch(() => null);
           throw new Error(data?.error || "下载模板失败");
         }
-        return r.blob();
+        return response.blob();
       })
-      .then(blob => {
+      .then((blob) => {
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "tools_import_template.xlsx";
-        a.click();
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "tools_import_template.xlsx";
+        anchor.click();
         URL.revokeObjectURL(url);
       })
       .catch((error) => alert(error.message || "下载模板失败"));
   };
 
-  const handleBatchImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
+  const handleBatchImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
 
     setImporting(true);
@@ -101,28 +134,50 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
     }
   };
 
-  const handleBatchImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    e.target.value = "";
-    if (!files || files.length === 0) return;
+  const openImportPicker = () => {
+    if (importing) return;
+    importInputRef.current?.click();
+  };
+
+  const handleBatchImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    event.target.value = "";
+    if (!files?.length) return;
 
     setUploadingImages(true);
     try {
-      const form = new FormData();
-      for (let i = 0; i < files.length; i++) {
-        form.append("files", files[i]);
+      const results: { originalName: string; url?: string; error?: string }[] = [];
+
+      for (const file of Array.from(files)) {
+        const form = new FormData();
+        form.append("originalName", file.name);
+        form.append("file", file, file.name);
+
+        try {
+          const res = await fetch("/api/admin/upload", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: form,
+          });
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            results.push({ originalName: file.name, error: data?.error || "上传失败" });
+            continue;
+          }
+
+          results.push({ originalName: data?.originalName || file.name, url: data?.url });
+        } catch {
+          results.push({ originalName: file.name, error: "上传失败，请检查网络" });
+        }
       }
-      const res = await fetch("/api/admin/upload-batch", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
+
+      setImageUploadResult({
+        total: files.length,
+        successCount: results.filter((item) => item.url).length,
+        failCount: results.filter((item) => item.error).length,
+        results,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || "上传失败");
-      } else {
-        setImageUploadResult(data);
-      }
     } catch {
       alert("上传失败，请检查网络");
     } finally {
@@ -130,19 +185,25 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
     }
   };
 
+  const openBatchImagePicker = () => {
+    if (uploadingImages) return;
+    batchImageInputRef.current?.click();
+  };
+
   return (
     <div className="animate-in fade-in">
       <div className="flex flex-wrap gap-3 items-center mb-6">
-        <input type="text" placeholder="搜索工具名称..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-56 px-4 py-2 bg-white border border-[#d2d2d7] rounded-[10px] outline-none text-sm" />
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="px-3 py-2 bg-white border border-[#d2d2d7] rounded-[10px] outline-none text-sm text-[#6e6e73]">
+        <input type="text" placeholder="搜索工具名称..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-56 px-4 py-2 bg-white border border-[#d2d2d7] rounded-[10px] outline-none text-sm" />
+        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="px-3 py-2 bg-white border border-[#d2d2d7] rounded-[10px] outline-none text-sm text-[#6e6e73]">
           <option value="">全部分类</option>
-          {categories.filter(c => !c.parentId).map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+          {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
         </select>
-        <select value={filterSponsored} onChange={e => setFilterSponsored(e.target.value)} className="px-3 py-2 bg-white border border-[#d2d2d7] rounded-[10px] outline-none text-sm text-[#6e6e73]">
+        <select value={filterSponsored} onChange={(e) => setFilterSponsored(e.target.value)} className="px-3 py-2 bg-white border border-[#d2d2d7] rounded-[10px] outline-none text-sm text-[#6e6e73]">
           <option value="">热门状态</option>
           <option value="yes">仅热门</option>
           <option value="no">非热门</option>
         </select>
+
         {selectedToolIds.size > 0 && (
           <div className="flex gap-2 ml-auto items-center">
             <span className="text-sm text-[#86868b]">已选 {selectedToolIds.size} 项</span>
@@ -151,18 +212,25 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
             <button onClick={handleBatchDelete} className="px-3 py-1.5 bg-red-50 text-red-500 rounded-[8px] text-sm font-medium hover:bg-red-100">批量删除</button>
           </div>
         )}
-        <button onClick={() => onOpenToolModal()} className="flex gap-2 px-4 py-2 bg-[#0071e3] text-white rounded-[8px] text-sm hover:bg-[#0077ED] ml-auto"><Plus className="w-4 h-4"/> 新增工具</button>
-        <button onClick={handleDownloadTemplate} className="flex gap-2 px-4 py-2 bg-white border border-[#d2d2d7] text-[#1d1d1f] rounded-[8px] text-sm hover:bg-[#f5f5f7]"><Download className="w-4 h-4"/> 下载模板</button>
-        <label className={`flex gap-2 px-4 py-2 border border-green-300 text-green-700 bg-green-50 rounded-[8px] text-sm hover:bg-green-100 cursor-pointer ${importing ? "opacity-50 pointer-events-none" : ""}`}>
-          <Upload className="w-4 h-4"/> {importing ? "导入中..." : "批量导入"}
-          <input ref={importInputRef} type="file" accept=".xlsx,.xls" onChange={handleBatchImport} className="hidden" disabled={importing} />
-        </label>
-        <label className={`flex gap-2 px-4 py-2 border border-purple-300 text-purple-700 bg-purple-50 rounded-[8px] text-sm hover:bg-purple-100 cursor-pointer ${uploadingImages ? "opacity-50 pointer-events-none" : ""}`}>
-          <ImagePlus className="w-4 h-4"/> {uploadingImages ? "上传中..." : "批量上传图片"}
-          <input ref={batchImageInputRef} type="file" accept="image/*" multiple onChange={handleBatchImageUpload} className="hidden" disabled={uploadingImages} />
-        </label>
+
+        <button onClick={() => onOpenToolModal()} className="flex gap-2 px-4 py-2 bg-[#0071e3] text-white rounded-[8px] text-sm hover:bg-[#0077ED] ml-auto">
+          <Plus className="w-4 h-4" /> 新增工具
+        </button>
+        <button onClick={handleDownloadTemplate} className="flex gap-2 px-4 py-2 bg-white border border-[#d2d2d7] text-[#1d1d1f] rounded-[8px] text-sm hover:bg-[#f5f5f7]">
+          <Download className="w-4 h-4" /> 下载模板
+        </button>
+        <button type="button" onClick={openImportPicker} className={`flex gap-2 px-4 py-2 border border-green-300 text-green-700 bg-green-50 rounded-[8px] text-sm hover:bg-green-100 ${importing ? "opacity-50 pointer-events-none" : ""}`}>
+          <Upload className="w-4 h-4" /> {importing ? "导入中..." : "批量导入"}
+        </button>
+        <button type="button" onClick={openBatchImagePicker} className={`flex gap-2 px-4 py-2 border border-purple-300 text-purple-700 bg-purple-50 rounded-[8px] text-sm hover:bg-purple-100 ${uploadingImages ? "opacity-50 pointer-events-none" : ""}`}>
+          <ImagePlus className="w-4 h-4" /> {uploadingImages ? "上传中..." : "批量上传图片"}
+        </button>
+        <input ref={importInputRef} type="file" accept=".xlsx,.xls" onChange={handleBatchImport} className="sr-only" disabled={importing} tabIndex={-1} />
+        <input ref={batchImageInputRef} type="file" accept="image/*" multiple onChange={handleBatchImageUpload} className="sr-only" disabled={uploadingImages} tabIndex={-1} />
       </div>
-      <p className="mb-4 text-[13px] text-[#86868b]">批量导入时，“Logo图片名”列可填写批量上传图片的原始文件名，可带或不带扩展名；也支持直接填写完整图片 URL。</p>
+
+      <p className="mb-4 text-[13px] text-[#86868b]">批量导入时，“Logo图片名”列可以填写上传图片的原始文件名，也支持直接填写完整图片 URL。</p>
+
       <div className="bg-white rounded-[20px] shadow-sm border border-[#e8e8ed] overflow-hidden">
         <table className="w-full text-left text-sm">
           <thead>
@@ -177,12 +245,16 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
             </tr>
           </thead>
           <tbody>
-            {filteredToolsList.map(tool => (
+            {filteredToolsList.map((tool) => (
               <tr key={tool.id} className={`border-b border-[#e8e8ed] hover:bg-[#f5f5f7] ${selectedToolIds.has(tool.id) ? "bg-[#0071e3]/[0.03]" : ""}`}>
                 <td className="p-4"><input type="checkbox" checked={selectedToolIds.has(tool.id)} onChange={() => toggleSelectTool(tool.id)} className="w-4 h-4 accent-[#0071e3] cursor-pointer" /></td>
                 <td className="p-4 font-medium">{tool.name} {tool.isSponsored && <CheckCircle2 className="w-4 h-4 inline text-[#0071e3] ml-1" />}</td>
                 <td className="p-4 font-bold text-[#0071e3]">{tool.order || 0}</td>
-                <td className="p-4 text-[#6e6e73]">{categories.find(c => c.id === tool.categoryId)?.name || '-'}</td>
+                <td className="p-4 text-[#6e6e73]">
+                  <div className="space-y-1">
+                    {getCategoryLabels(tool, categories).map((label) => <div key={`${tool.id}-${label}`}>{label}</div>)}
+                  </div>
+                </td>
                 <td className="p-4 text-[#86868b] tabular-nums">{(tool.views || 0).toLocaleString()}</td>
                 <td className="p-4">{tool.isSponsored ? <span className="text-[#ff6b35] font-medium">是</span> : "否"}</td>
                 <td className="p-4 text-right"><button onClick={() => onOpenToolModal(tool)} className="mr-3 text-[#0071e3] hover:underline">编辑</button><button onClick={() => onDelete("tools", tool.id)} className="text-red-500 hover:underline">删除</button></td>
@@ -194,9 +266,9 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
           </tbody>
         </table>
       </div>
+
       <p className="mt-3 text-[13px] text-[#86868b]">共 {filteredToolsList.length} / {tools.length} 个工具</p>
 
-      {/* 批量导入结果弹窗 */}
       {importResult && (
         <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center p-4">
           <div className="bg-white p-6 rounded-[20px] w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl">
@@ -210,9 +282,7 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
               <div className="bg-red-50 rounded-[12px] p-4 mb-4">
                 <p className="text-sm font-medium text-red-700 mb-2">失败详情：</p>
                 <ul className="text-sm text-red-600 space-y-1">
-                  {importResult.details.filter(d => !d.ok).map(d => (
-                    <li key={d.row}>第 {d.row} 行「{d.name}」: {d.error}</li>
-                  ))}
+                  {importResult.details.filter((item) => !item.ok).map((item) => <li key={item.row}>第 {item.row} 行，{item.name}：{item.error}</li>)}
                 </ul>
               </div>
             )}
@@ -223,7 +293,6 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
         </div>
       )}
 
-      {/* 批量上传图片结果弹窗 */}
       {imageUploadResult && (
         <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center p-4">
           <div className="bg-white p-6 rounded-[20px] w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl">
@@ -237,9 +306,7 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
               <div className="bg-red-50 rounded-[12px] p-4 mb-4">
                 <p className="text-sm font-medium text-red-700 mb-2">失败详情：</p>
                 <ul className="text-sm text-red-600 space-y-1">
-                  {imageUploadResult.results.filter(r => r.error).map((r, i) => (
-                    <li key={i}>「{r.originalName}」: {r.error}</li>
-                  ))}
+                  {imageUploadResult.results.filter((item) => item.error).map((item, index) => <li key={index}>{item.originalName}：{item.error}</li>)}
                 </ul>
               </div>
             )}
@@ -247,10 +314,10 @@ export default function AdminTools({ tools, categories, token, onOpenToolModal, 
               <div className="bg-green-50 rounded-[12px] p-4 mb-4">
                 <p className="text-sm font-medium text-green-700 mb-2">上传成功的图片：</p>
                 <ul className="text-sm text-green-600 space-y-1">
-                  {imageUploadResult.results.filter(r => r.url).map((r, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <img src={r.url} className="w-8 h-8 rounded object-cover" />
-                      <span className="truncate">{r.originalName}</span>
+                  {imageUploadResult.results.filter((item) => item.url).map((item, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <img src={item.url} className="w-8 h-8 rounded object-cover" />
+                      <span className="truncate">{item.originalName}</span>
                     </li>
                   ))}
                 </ul>

@@ -14,6 +14,7 @@ model Tool {
   description   String
   url           String
   logo          String?
+  canonicalKey  String?
   categoryId    String
   subCategoryId String?
   tags          String    // 在 SQLite 中，数组可以用逗号分隔的字符串或 JSON 字符串存储
@@ -23,11 +24,27 @@ model Tool {
   order         Int       @default(0) // 👈 新增：工具的自定义排序权重 (越高越排在前面)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  categoryAssignments ToolCategory[]
 
   @@index([categoryId])
   @@index([subCategoryId])
+  @@index([canonicalKey])
   @@index([isSponsored, order, views])
   @@index([createdAt])
+}
+
+model ToolCategory {
+  id            String   @id @default(cuid())
+  toolId        String
+  categoryId    String
+  subCategoryId String   @default("")
+  createdAt     DateTime @default(now())
+  tool          Tool     @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@unique([toolId, categoryId, subCategoryId])
+  @@index([toolId])
+  @@index([categoryId])
+  @@index([subCategoryId])
 }
 
 // 分类表

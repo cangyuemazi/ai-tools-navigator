@@ -127,7 +127,7 @@ export default function CommandPalette() {
                   autoFocus
                   value={query}
                   onChange={e => setQuery(e.target.value)}
-                  placeholder="搜索 AI 工具... (支持拼音、首字母)"
+                  placeholder="Ctrl+K 全局搜索"
                   className="flex-1 text-[16px] bg-transparent outline-none placeholder-[#86868b] text-[#1d1d1f]"
                 />
                 <kbd className="hidden sm:inline-flex text-[11px] font-medium text-[#86868b] bg-[#f5f5f7] px-2 py-1 rounded-[6px] border border-[#e8e8ed]">
